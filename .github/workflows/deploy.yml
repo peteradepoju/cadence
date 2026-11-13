@@ -27,8 +27,7 @@ jobs:
       - run: npm test
       - run: npm run build
         env:
-          # Settings → Secrets and variables → Actions → Variables → VITE_GOOGLE_CLIENT_ID
-          VITE_GOOGLE_CLIENT_ID: ${{ vars.VITE_GOOGLE_CLIENT_ID }}
+          # The Google client ID comes from .env.production (it is public, not a secret).
           BASE_PATH: /${{ github.event.repository.name }}/
       - uses: actions/upload-pages-artifact@v3
         with:
