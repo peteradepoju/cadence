@@ -6,7 +6,7 @@ A calm planner for one person. Tasks, projects, habits, goals, focus and reviews
 - **Your data, your Drive.** Everything lives on your device (it works offline) and in a `Cadence` folder in your Google Drive. Cadence can only see the files it made.
 - **Your AI.** Bring your own free Gemini key; calls go straight from your device to Google.
 
-Live: https://peter-adepoju.github.io/cadence/
+Live: https://peteradepoju.github.io/cadence/
 
 ## What's in it
 
