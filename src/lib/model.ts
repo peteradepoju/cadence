@@ -161,6 +161,10 @@ export interface Settings {
   focusMinutes: number;
   breakMinutes: number;
   longBreakMinutes: number;
+  phoneSilence: boolean;     // silence the phone during focus rounds (MacroDroid on Android)
+  phoneOnUrl: string;        // webhook that turns Do Not Disturb on
+  phoneOffUrl: string;       // webhook that turns it off
+  focusChime: boolean;       // sound and vibration when a round or break ends
   aiKey: string;
   aiModel: string;
   aiOn: boolean;
@@ -186,6 +190,10 @@ export const DEFAULT_SETTINGS: Settings = {
   focusMinutes: 25,
   breakMinutes: 5,
   longBreakMinutes: 15,
+  phoneSilence: false,
+  phoneOnUrl: "",
+  phoneOffUrl: "",
+  focusChime: true,
   aiKey: "",
   aiModel: "",
   aiOn: true,

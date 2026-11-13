@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from "react";
 import { uid } from "./model";
 import { put, settings } from "./store";
+import { chime, silencePhone, unsilencePhone } from "./phone";
 
 // The focus timer. It keeps going while you move around the app (and across a reload), and each
 // finished focus round is logged as time spent on its task.
@@ -28,9 +29,10 @@ const lengthOf = (m: Mode) => { const st = settings(); return (m === "focus" ? s
 export function start(taskId?: string | null) {
   const left = s.running ? s.left : (s.left > 0 ? s.left : lengthOf(s.mode));
   emit({ running: true, endsAt: Date.now() + left * 1000, left, startedAt: s.startedAt ?? Date.now(), ...(taskId !== undefined ? { taskId } : {}) });
+  if (s.mode === "focus") silencePhone(left / 60);
 }
-export function pause() { if (!s.running) return; emit({ running: false, left: remaining(), endsAt: null }); }
-export function reset(mode: Mode = s.mode) { logPartial(); const total = lengthOf(mode); emit({ running: false, endsAt: null, left: total, total, mode, startedAt: null }); }
+export function pause() { if (!s.running) return; emit({ running: false, left: remaining(), endsAt: null }); unsilencePhone(); }
+export function reset(mode: Mode = s.mode) { logPartial(); unsilencePhone(); const total = lengthOf(mode); emit({ running: false, endsAt: null, left: total, total, mode, startedAt: null }); }
 export function setTask(taskId: string | null) { emit({ taskId }); }
 export function remaining(): number { return s.running && s.endsAt ? Math.max(0, Math.round((s.endsAt - Date.now()) / 1000)) : s.left; }
 
@@ -48,6 +50,7 @@ export function skip() {
 
 function next(finished: boolean) {
   const st = settings();
+  unsilencePhone();
   if (s.mode === "focus") {
     if (finished && s.startedAt) put("sessions", uid(), { taskId: s.taskId, start: new Date(s.startedAt).toISOString(), minutes: Math.round(s.total / 60), kind: "focus", note: "" });
     const mode: Mode = s.round % 4 === 0 ? "long" : "break";
@@ -64,6 +67,7 @@ setInterval(() => {
   if (remaining() <= 0) {
     const m = s.mode, t = s.taskId;
     next(true);
+    chime(m === "focus" ? "focus" : "break");
     onFinish(m, t);
   } else subs.forEach(f => f());
 }, 1000);
