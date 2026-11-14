@@ -1,6 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router";
-import { X, Trash2, Copy, Bell, Plus, Paperclip, Sparkles, Loader2, Timer, Target, Zap, Columns3, ExternalLink, Download, CalendarClock } from "lucide-react";
+import { X, Trash2, Copy, Bell, Plus, Paperclip, Sparkles, Loader2, Timer, Target, Zap, Columns3, ExternalLink, Download, CalendarClock, FileText, ImageOff, ImagePlus, ChevronLeft, ChevronRight } from "lucide-react";
+import { NotesEditor } from "./notes";
+import type { Attachment, Task } from "../lib/model";
 import { addTask, deleteTask, moveToProject, setColumn, timeSpent, updateTask } from "../lib/actions";
 import { aiReady, breakDown } from "../lib/ai";
 import { minutesLabel, niceDate, today } from "../lib/dates";
@@ -12,7 +14,7 @@ import { idb } from "../lib/idb";
 import { start as startFocus } from "../lib/focus";
 import { PriorityChip, ProjectChip, TagChip, WhenChip, Chip } from "./pickers";
 import { Tick, TaskRow } from "./task-row";
-import { Button, cx, IconBtn, MenuItem, Popover, toast, useIsMobile } from "./ui";
+import { Button, cx, IconBtn, MenuItem, Popover, toast, useIsMobile, Modal } from "./ui";
 import { InlineAdd } from "./quick-add";
 
 export function TaskDrawer() {
@@ -49,12 +51,8 @@ function Editor({ id, onClose }: { id: string; onClose: () => void }) {
   const sessions = useColl("sessions");
   const nav = useNavigate();
   const [title, setTitle] = useState(task.title);
-  const [notes, setNotes] = useState(task.notes);
   const [busy, setBusy] = useState(false);
-  const notesRef = useRef<HTMLTextAreaElement>(null);
   useEffect(() => { setTitle(task.title); }, [task.title]);
-  useEffect(() => { if (document.activeElement !== notesRef.current) setNotes(task.notes); }, [task.notes]);
-  useEffect(() => { const el = notesRef.current; if (el) { el.style.height = "auto"; el.style.height = Math.max(96, el.scrollHeight) + "px"; } }, [notes]);
   const subs = allTasks.filter(t => t.parentId === id).sort((a, b) => a.order - b.order);
   const project = projects.find(p => p.id === task.projectId);
   const parent = task.parentId ? get("tasks", task.parentId) : undefined;
@@ -63,7 +61,6 @@ function Editor({ id, onClose }: { id: string; onClose: () => void }) {
   const goal = goals.find(g => g.id === task.goalId) ?? (task.goalId ? get("goals", task.goalId) : undefined);
 
   const saveTitle = () => { const t = title.trim(); if (t && t !== task.title) updateTask(id, { title: t }); else setTitle(task.title); };
-  const saveNotes = () => { if (notes !== task.notes) updateTask(id, { notes }); };
 
   const doBreakDown = async () => {
     setBusy(true);
@@ -77,10 +74,11 @@ function Editor({ id, onClose }: { id: string; onClose: () => void }) {
 
   const addFiles = async (files: FileList | null) => {
     if (!files) return;
-    for (const f of Array.from(files)) {
+    for (const original of Array.from(files)) {
+      const f = await shrinkPhoto(original);
       if (f.size > 25 * 1024 * 1024) { toast(`${f.name} is over 25 MB`, { tone: "error" }); continue; }
       const fid = uid();
-      await idb.setBlob(`file:${fid}`, f);
+      await idb.setBlob(`file:${fid}`, new Blob([f], { type: f.type }));
       put("files", fid, { name: f.name, mime: f.type, size: f.size, driveId: null });
       updateTask(id, { attachments: [...(get("tasks", id)?.attachments ?? []), { id: fid, name: f.name, mime: f.type, size: f.size }] });
     }
@@ -90,13 +88,13 @@ function Editor({ id, onClose }: { id: string; onClose: () => void }) {
       const b = await fileBlob(fid);
       if (!b) { toast("This file is on another device and hasn't reached Drive yet, or Google isn't connected.", { tone: "error" }); return; }
       const url = URL.createObjectURL(b);
-      const a = document.createElement("a"); a.href = url; a.target = "_blank"; if (!/^(image|application\/pdf|text)/.test(b.type)) a.download = name; a.click();
+      const a = document.createElement("a"); a.href = url; a.download = name; a.click();
       setTimeout(() => URL.revokeObjectURL(url), 60_000);
     } catch { toast("Couldn't open the file.", { tone: "error" }); }
   };
 
   return (
-    <div className="flex flex-col min-h-full">
+    <div className="flex flex-col min-h-full" onPaste={e => { const f = e.clipboardData?.files; if (f && f.length) { e.preventDefault(); void addFiles(f); toast(f.length > 1 ? `Attached ${f.length} files` : "Attached"); } }}>
       <div className="flex items-center gap-1 px-4 pt-3 pb-1 sticky top-0 bg-surface z-[1]">
         {parent ? <button className="text-xs text-muted hover:text-fg truncate max-w-[60%]" onClick={() => nav(`?task=${parent.id}`)}>↑ {parent.title}</button> : <span className="text-xs text-muted">{project ? `${project.emoji} ${project.name}` : "Inbox"}</span>}
         <div className="flex-1" />
@@ -140,8 +138,7 @@ function Editor({ id, onClose }: { id: string; onClose: () => void }) {
           )}
         </div>
 
-        <textarea ref={notesRef} value={notes} onChange={e => setNotes(e.target.value)} onBlur={saveNotes} placeholder="Notes, links, details…"
-          className="w-full min-h-24 resize-none rounded-xl bg-surface-2/60 p-3 text-[15px] outline-none focus:bg-surface-2" />
+        <NotesEditor key={task.id} value={task.notes} onSave={v => updateTask(id, { notes: v })} />
         {task.link && <a href={task.link} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-sm text-accent-strong hover:underline truncate"><ExternalLink size={14} />{task.link}</a>}
 
         <Reminders task={task} />
@@ -157,22 +154,19 @@ function Editor({ id, onClose }: { id: string; onClose: () => void }) {
 
         <div>
           <div className="flex items-center justify-between mb-1">
-            <h3 className="eyebrow">Files</h3>
-            <label className="inline-flex items-center gap-1.5 text-[13px] text-muted hover:text-fg cursor-pointer px-2 py-1 rounded-full hover:bg-surface-2">
-              <Paperclip size={14} /> Attach
-              <input type="file" multiple className="hidden" onChange={e => { void addFiles(e.target.files); e.target.value = ""; }} />
-            </label>
-          </div>
-          {task.attachments.map(a => (
-            <div key={a.id} className="flex items-center gap-2 py-1.5 text-sm">
-              <Paperclip size={14} className="text-muted" />
-              <button className="flex-1 text-left truncate hover:underline" onClick={() => openFile(a.id, a.name)}>{a.name}</button>
-              <span className="text-xs text-faint">{Math.max(1, Math.round(a.size / 1024))} KB</span>
-              {!all("files").find(f => f.id === a.id)?.driveId && <span className="text-[11px] text-faint" title="Goes to your Drive at the next sync">on device</span>}
-              <IconBtn label="Download" className="size-7" onClick={() => openFile(a.id, a.name)}><Download size={14} /></IconBtn>
-              <IconBtn label="Remove" className="size-7" onClick={() => updateTask(id, { attachments: task.attachments.filter(x => x.id !== a.id) })}><X size={14} /></IconBtn>
+            <h3 className="eyebrow">Pictures and files</h3>
+            <div className="flex">
+              <label className="inline-flex items-center gap-1.5 text-[13px] text-muted hover:text-fg cursor-pointer px-2 py-1 rounded-full hover:bg-surface-2">
+                <ImagePlus size={14} /> Picture
+                <input type="file" accept="image/*" multiple className="hidden" onChange={e => { void addFiles(e.target.files); e.target.value = ""; }} />
+              </label>
+              <label className="inline-flex items-center gap-1.5 text-[13px] text-muted hover:text-fg cursor-pointer px-2 py-1 rounded-full hover:bg-surface-2">
+                <Paperclip size={14} /> File
+                <input type="file" multiple className="hidden" onChange={e => { void addFiles(e.target.files); e.target.value = ""; }} />
+              </label>
             </div>
-          ))}
+          </div>
+          <Attachments task={task} onOpen={openFile} />
         </div>
 
         <div className="text-xs text-faint space-y-0.5 pt-2 border-t border-border">
@@ -221,4 +215,114 @@ function Reminders({ task }: { task: ReturnType<typeof get<"tasks">> & object })
       ))}
     </div>
   );
+}
+
+const isImage = (a: Pick<Attachment, "mime" | "name">) => a.mime?.startsWith("image/") || /\.(png|jpe?g|gif|webp|avif|heic|bmp|svg)$/i.test(a.name);
+
+/** The picture behind an attachment, from this device or from Drive. */
+function useFileUrl(a: Attachment | null): { url: string | null; state: "loading" | "ready" | "missing" } {
+  const [r, setR] = useState<{ url: string | null; state: "loading" | "ready" | "missing" }>({ url: null, state: "loading" });
+  useEffect(() => {
+    if (!a) return;
+    let url: string | null = null, live = true;
+    setR({ url: null, state: "loading" });
+    fileBlob(a.id).then(b => {
+      if (!live) return;
+      if (!b) { setR({ url: null, state: "missing" }); return; }
+      // Drive sometimes hands back a file with no type; images need one to display.
+      const typed = b.type && b.type !== "application/octet-stream" ? b : new Blob([b], { type: a.mime || "image/jpeg" });
+      url = URL.createObjectURL(typed);
+      setR({ url, state: "ready" });
+    }).catch(() => live && setR({ url: null, state: "missing" }));
+    return () => { live = false; if (url) URL.revokeObjectURL(url); };
+  }, [a?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  return r;
+}
+
+function Thumb({ a, onOpen }: { a: Attachment; onOpen: () => void }) {
+  const { url, state } = useFileUrl(a);
+  return (
+    <button onClick={onOpen} title={a.name} className="relative aspect-square overflow-hidden rounded-xl border border-border bg-surface-2 grid place-items-center">
+      {url ? <img src={url} alt={a.name} className="h-full w-full object-cover" loading="lazy" />
+        : state === "loading" ? <Loader2 size={18} className="animate-spin text-faint" />
+        : <span className="flex flex-col items-center gap-1 px-2 text-center text-[11px] text-faint"><ImageOff size={18} />Not on this device yet</span>}
+    </button>
+  );
+}
+
+function Viewer({ list, index, onIndex, onClose, onDownload }: { list: Attachment[]; index: number; onIndex: (i: number) => void; onClose: () => void; onDownload: (a: Attachment) => void }) {
+  const a = list[index] ?? null;
+  const { url, state } = useFileUrl(a);
+  useEffect(() => {
+    const k = (e: KeyboardEvent) => { if (e.key === "ArrowRight") onIndex((index + 1) % list.length); if (e.key === "ArrowLeft") onIndex((index - 1 + list.length) % list.length); };
+    window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k);
+  }, [index, list.length, onIndex]);
+  if (!a) return null;
+  return (
+    <Modal open onClose={onClose} bare wide>
+      <div className="relative bg-black/90 md:rounded-2xl overflow-hidden">
+        <div className="grid place-items-center min-h-[50vh] max-h-[80vh]">
+          {url ? <img src={url} alt={a.name} className="max-h-[80vh] w-auto max-w-full object-contain" />
+            : state === "loading" ? <Loader2 className="animate-spin text-white/70" /> : <p className="text-white/70 text-sm p-6 text-center">This picture hasn't reached your Drive yet. Open Cadence on the device it was added on, or connect Google.</p>}
+        </div>
+        {list.length > 1 && <>
+          <button aria-label="Previous" onClick={() => onIndex((index - 1 + list.length) % list.length)} className="absolute left-2 top-1/2 -translate-y-1/2 size-10 grid place-items-center rounded-full bg-black/50 text-white"><ChevronLeft /></button>
+          <button aria-label="Next" onClick={() => onIndex((index + 1) % list.length)} className="absolute right-2 top-1/2 -translate-y-1/2 size-10 grid place-items-center rounded-full bg-black/50 text-white"><ChevronRight /></button>
+        </>}
+        <div className="flex items-center gap-2 bg-black/70 px-3 py-2 text-white text-sm">
+          <span className="flex-1 truncate">{a.name}</span>
+          <button onClick={() => onDownload(a)} className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 hover:bg-white/10"><Download size={14} /> Save</button>
+          <button onClick={onClose} aria-label="Close" className="rounded-full p-1.5 hover:bg-white/10"><X size={16} /></button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+function Attachments({ task, onOpen }: { task: Task; onOpen: (id: string, name: string) => void }) {
+  const [view, setView] = useState<number | null>(null);
+  const images = task.attachments.filter(isImage);
+  const others = task.attachments.filter(a => !isImage(a));
+  const remove = (aid: string) => updateTask(task.id, { attachments: task.attachments.filter(x => x.id !== aid) });
+  return (
+    <>
+      {images.length > 0 && (
+        <div className="grid grid-cols-3 gap-2 mb-2">
+          {images.map((a, i) => (
+            <div key={a.id} className="group relative">
+              <Thumb a={a} onOpen={() => setView(i)} />
+              <button aria-label="Remove picture" onClick={() => remove(a.id)} className="absolute top-1 right-1 size-6 grid place-items-center rounded-full bg-black/55 text-white opacity-0 group-hover:opacity-100 md:opacity-0 max-md:opacity-100"><X size={12} /></button>
+            </div>
+          ))}
+        </div>
+      )}
+      {others.map(a => (
+        <div key={a.id} className="flex items-center gap-2 py-1.5 text-sm">
+          <FileText size={14} className="text-muted" />
+          <button className="flex-1 text-left truncate hover:underline" onClick={() => onOpen(a.id, a.name)}>{a.name}</button>
+          <span className="text-xs text-faint">{Math.max(1, Math.round(a.size / 1024))} KB</span>
+          {!all("files").find(f => f.id === a.id)?.driveId && <span className="text-[11px] text-faint" title="Goes to your Drive at the next sync">on device</span>}
+          <IconBtn label="Download" className="size-7" onClick={() => onOpen(a.id, a.name)}><Download size={14} /></IconBtn>
+          <IconBtn label="Remove" className="size-7" onClick={() => remove(a.id)}><X size={14} /></IconBtn>
+        </div>
+      ))}
+      {!task.attachments.length && <p className="text-xs text-faint px-1">Attach pictures and files, or paste a screenshot here.</p>}
+      {view !== null && <Viewer list={images} index={view} onIndex={setView} onClose={() => setView(null)} onDownload={a => onOpen(a.id, a.name)} />}
+    </>
+  );
+}
+
+/** Big phone photos are scaled down (longest side 2400px) so they sync quickly; other files are kept as they are. */
+async function shrinkPhoto(f: File): Promise<File> {
+  if (!/^image\/(jpeg|png|webp|heic|heif)$/.test(f.type) || f.size < 1.5 * 1024 * 1024) return f;
+  try {
+    const bmp = await createImageBitmap(f);
+    const scale = Math.min(1, 2400 / Math.max(bmp.width, bmp.height));
+    const c = document.createElement("canvas");
+    c.width = Math.round(bmp.width * scale); c.height = Math.round(bmp.height * scale);
+    c.getContext("2d")!.drawImage(bmp, 0, 0, c.width, c.height);
+    const blob = await new Promise<Blob | null>(r => c.toBlob(r, "image/jpeg", 0.85));
+    if (!blob || blob.size >= f.size) return f;
+    return new File([blob], f.name.replace(/\.\w+$/, "") + ".jpg", { type: "image/jpeg" });
+  } catch { return f; }
 }
