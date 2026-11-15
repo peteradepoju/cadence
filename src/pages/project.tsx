@@ -21,6 +21,9 @@ export function ProjectPage() {
   const tasks = useColl("tasks");
   const [editing, setEditing] = useState(false);
   const [sort, setSort] = useState<Sort>("manual");
+  // Moving to another project closes the editor (this page is reused between projects).
+  const [shown, setShown] = useState(id);
+  if (shown !== id) { setShown(id); setEditing(false); setSort("manual"); }
   const confirm = useConfirm();
   const nav = useNavigate();
   if (!project) return <Page><Empty title="Project not found">It may have been deleted on another device.</Empty></Page>;
@@ -53,7 +56,8 @@ export function ProjectPage() {
       {project.view === "list"
         ? <TaskList tasks={open} sortable={sort === "manual"} hideProject addDefaults={{ projectId: id }} completed={done} empty={<Empty title="No tasks yet">Add the first one below.</Empty>} />
         : <Board project={project} tasks={mine} />}
-      <ProjectEditor open={editing} onClose={() => setEditing(false)} project={project} />
+      {/* Keyed by project and opened fresh each time, so one project's statuses never carry into another's. */}
+      {editing && <ProjectEditor key={project.id} open onClose={() => setEditing(false)} project={project} />}
     </Page>
   );
 }
