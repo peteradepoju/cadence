@@ -119,7 +119,6 @@ export function SettingsPage() {
             <Row label={<span className="inline-flex items-center gap-1.5"><CalendarDays size={16} /> Reminders through Google Calendar</span>} hint="Timed tasks, reminders and time blocks go on a “Cadence” calendar, so your phone alerts you when Cadence is closed. Moving them there moves them here.">
               <Toggle on={s.calOn && hasScope("calendar")} onChange={turnCal} />
             </Row>
-            {s.calOn && <Row label="Habit reminders on the calendar" hint="A repeating event at each habit's reminder time."><Toggle on={s.habitCalendar} onChange={v => { setSettings({ habitCalendar: v }); void syncNow(); }} /></Row>}
             <Row label="Show my other calendars" hint="See your events next to your tasks (read only).">
               <Toggle on={s.calShowOthers && hasScope("calendarRead")} onChange={turnOthers} />
             </Row>
@@ -224,7 +223,7 @@ export function SettingsPage() {
             await idb.clear(); try { Object.keys(localStorage).filter(k => k.startsWith("cadence:")).forEach(k => localStorage.removeItem(k)); } catch {} replaceAll({}); location.reload();
           }}><Trash2 size={14} /> Clear</Button>
         </Row>
-        <p className="text-xs text-faint">{all("tasks").length} tasks, {all("projects").length} projects, {all("habits").length} habits on this device · Cadence {__APP_VERSION__} · <a className="underline" href={`${import.meta.env.BASE_URL}privacy.html`}>Privacy</a></p>
+        <p className="text-xs text-faint">{all("tasks").length} tasks, {all("projects").length} projects on this device · Cadence {__APP_VERSION__} · <a className="underline" href={`${import.meta.env.BASE_URL}privacy.html`}>Privacy</a></p>
       </Card>
     </Page>
   );

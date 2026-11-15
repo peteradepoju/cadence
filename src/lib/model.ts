@@ -81,6 +81,7 @@ export interface Project {
 
 export interface Tag { id: string; name: string; color: string; deleted?: boolean }
 
+/** Old data only: Habits were removed from Cadence. Kept so earlier data still syncs and its calendar events can be cleared. */
 export interface Habit {
   id: string;
   name: string;

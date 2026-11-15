@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router";
-import { MoonStar, CalendarCheck, Sparkles, Loader2, ArrowRight, Check, Flame } from "lucide-react";
+import { MoonStar, CalendarCheck, Sparkles, Loader2, ArrowRight, Check } from "lucide-react";
 import { Page } from "../components/shell";
 import { Button, PageHeader, Section, Segmented, cx, toast } from "../components/ui";
 import { TaskRow } from "../components/task-row";
@@ -8,7 +8,7 @@ import { addDays, longDate, minutesLabel, niceDate, today, weekKey, weekStartOf,
 import { carryForward, isOverdue, byDue } from "../lib/actions";
 import { aiReady, dayReflection, weeklyReview } from "../lib/ai";
 import { aiProblem } from "../lib/gemini";
-import { countOn, dueOn, logMap, streak, goalProgress } from "../lib/habits";
+import { goalProgress } from "../lib/goals";
 import { get, put, useColl } from "../lib/store";
 
 export function ReviewPage() {
@@ -41,8 +41,6 @@ function Answers({ id, questions }: { id: string; questions: [string, string][] 
 function DayReview() {
   const tasks = useColl("tasks");
   const sessions = useColl("sessions");
-  const habits = useColl("habits").filter(h => !h.archived);
-  const logs = logMap(useColl("habitLogs"));
   const reviews = useColl("reviews");
   const nav = useNavigate();
   const t = today(), tomorrow = addDays(t, 1);
@@ -52,8 +50,6 @@ function DayReview() {
   const left = tasks.filter(x => !x.done && !x.parentId && (isOverdue(x, tomorrow) || (x.plannedFor && x.plannedFor <= t))).sort(byDue);
   const [keep, setKeep] = useState<Set<string>>(() => new Set(left.map(x => x.id)));
   const focus = sessions.filter(x => x.kind === "focus" && x.start.slice(0, 10) === t).reduce((a, x) => a + x.minutes, 0);
-  const habitsDone = habits.filter(h => dueOn(h, t) && countOn(logs, h, t) >= Math.max(1, h.target));
-  const habitsDue = habits.filter(h => dueOn(h, t));
   const [energy, setEnergy] = useState<number | null>(review?.energy ?? null);
   const [busy, setBusy] = useState(false);
   const finish = async () => {
@@ -65,7 +61,7 @@ function DayReview() {
     if (aiReady()) {
       setBusy(true);
       try {
-        const ai = await dayReflection({ done: done.map(x => x.title), movedToTomorrow: left.filter(x => keep.has(x.id)).map(x => x.title), focusMinutes: focus, habits: `${habitsDone.length}/${habitsDue.length}`, energy, notes: get("reviews", id)?.answers });
+        const ai = await dayReflection({ done: done.map(x => x.title), movedToTomorrow: left.filter(x => keep.has(x.id)).map(x => x.title), focusMinutes: focus, energy, notes: get("reviews", id)?.answers });
         put("reviews", id, { ai });
       } catch (e) { toast(aiProblem(e), { tone: "error" }); }
       setBusy(false);
@@ -77,7 +73,7 @@ function DayReview() {
       <div className="grid grid-cols-3 gap-2 mb-6">
         <Stat label="Done" value={String(done.length)} />
         <Stat label="Focused" value={minutesLabel(focus)} />
-        <Stat label="Habits" value={`${habitsDone.length}/${habitsDue.length}`} />
+        <Stat label="Still open" value={String(left.length)} />
       </div>
       {done.length > 0 && <Section title="Done today">{done.map(x => <TaskRow key={x.id} task={x} />)}</Section>}
       <Section title={left.length ? "Still open: tick what moves to tomorrow" : "Still open"}>
@@ -112,9 +108,7 @@ function Stat({ label, value, sub }: { label: string; value: string; sub?: strin
 function WeekReview() {
   const tasks = useColl("tasks");
   const sessions = useColl("sessions");
-  const habits = useColl("habits").filter(h => !h.archived);
   const goals = useColl("goals");
-  const logsArr = useColl("habitLogs");
   const reviews = useColl("reviews");
   const nav = useNavigate();
   const t = today();
@@ -122,7 +116,6 @@ function WeekReview() {
   const start = weekStartOf(wk), end = addDays(start, 6);
   const id = `week:${wk}`;
   const review = reviews.find(r => r.id === id);
-  const logs = logMap(logsArr);
   const [busy, setBusy] = useState(false);
   const inWeek = (iso: string | null | undefined) => !!iso && iso.slice(0, 10) >= start && iso.slice(0, 10) <= end;
   const done = tasks.filter(x => x.done && inWeek(x.doneAt) && !x.parentId);
@@ -136,7 +129,6 @@ function WeekReview() {
     for (const x of done) { const n = x.projectId ? get("projects", x.projectId)?.name ?? "Other" : "Inbox"; m.set(n, (m.get(n) ?? 0) + 1); }
     return [...m].sort((a, b) => b[1] - a[1]);
   }, [done]);
-  const habitRows = habits.map(h => ({ h, met: days.filter(d => d <= t && countOn(logs, h, d) >= Math.max(1, h.target)).length, due: h.kind === "weekly" ? h.perWeek : days.filter(d => d <= t && dueOn(h, d)).length, streak: streak(h, logs).current }));
   const weekGoals = goals.filter(g => g.status === "active" && (g.period === wk || g.horizon === "month" || g.horizon === "quarter"));
 
   const write = async () => {
@@ -144,7 +136,7 @@ function WeekReview() {
     try {
       const ai = await weeklyReview({
         week: wk, done: done.map(x => x.title).slice(0, 60), slipped: slipped.map(x => x.title), focusMinutes: focus, perDay: Object.fromEntries(days.map((d, i) => [DAY_SHORT[dayOfWeek(d)], perDay[i]])),
-        byProject: Object.fromEntries(byProject), habits: habitRows.map(r => `${r.h.name}: ${r.met}/${r.due}`), goals: weekGoals.map(g => `${g.title}: ${goalProgress(g, goals, tasks)}%`),
+        byProject: Object.fromEntries(byProject), goals: weekGoals.map(g => `${g.title}: ${goalProgress(g, goals, tasks)}%`),
         energy: reviews.filter(r => r.kind === "day" && r.period >= start && r.period <= end && r.energy).map(r => r.energy),
       }, review?.answers ?? {});
       put("reviews", id, { kind: "week", period: wk, ai });
@@ -172,7 +164,6 @@ function WeekReview() {
         </div>
       </Section>
       {byProject.length > 0 && <Section title="Where the work went">{byProject.map(([n, c]) => <div key={n} className="flex items-center gap-3 py-1 text-sm"><span className="flex-1">{n}</span><div className="w-32 h-1.5 rounded-full bg-surface-2"><div className="h-full rounded-full bg-accent" style={{ width: `${(c / done.length) * 100}%` }} /></div><span className="w-6 text-right tabular text-muted">{c}</span></div>)}</Section>}
-      {habitRows.length > 0 && <Section title="Habits">{habitRows.map(r => <div key={r.h.id} className="flex items-center gap-3 py-1 text-sm"><span>{r.h.emoji}</span><span className="flex-1">{r.h.name}</span><span className="tabular text-muted">{r.met}/{r.due}</span><span className="inline-flex items-center gap-0.5 text-xs text-muted w-10"><Flame size={12} className="text-p1" />{r.streak}</span></div>)}</Section>}
       {slipped.length > 0 && <Section title="Slipped">{slipped.map(x => <TaskRow key={x.id} task={x} />)}
         <Button size="sm" variant="ghost" className="mt-1" onClick={() => { carryForward(slipped.map(x => x.id), addDays(t, 1)); toast(`Moved ${slipped.length} to tomorrow`); }}>Move all to tomorrow</Button>
       </Section>}

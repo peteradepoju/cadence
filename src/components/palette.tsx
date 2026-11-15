@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
-import { Search, Sun, Inbox, CalendarDays, Timer, Repeat2, Target, NotebookPen, Settings, Plus, Hash, CheckCircle2, CalendarRange, Moon } from "lucide-react";
+import { Search, Sun, Inbox, CalendarDays, Timer, Target, NotebookPen, Settings, Plus, Hash, CheckCircle2, CalendarRange, Moon } from "lucide-react";
 import { useColl } from "../lib/store";
 import { closePalette, openQuickAdd, showShortcuts, useUI } from "../lib/ui-state";
 import { Modal, cx, Dot } from "./ui";
@@ -27,7 +27,6 @@ export function Palette() {
       { id: "up", label: "Upcoming", hint: "G U", icon: <CalendarRange size={16} />, run: go("/upcoming") },
       { id: "cal", label: "Calendar", hint: "G C", icon: <CalendarDays size={16} />, run: go("/calendar") },
       { id: "focus", label: "Focus", hint: "G F", icon: <Timer size={16} />, run: go("/focus") },
-      { id: "habits", label: "Habits", hint: "G H", icon: <Repeat2 size={16} />, run: go("/habits") },
       { id: "goals", label: "Goals", hint: "G G", icon: <Target size={16} />, run: go("/goals") },
       { id: "review", label: "Review", hint: "G R", icon: <NotebookPen size={16} />, run: go("/review") },
       { id: "plan", label: "Plan the week", icon: <CalendarRange size={16} />, run: go("/plan") },
@@ -73,7 +72,7 @@ export function Palette() {
       </Modal>
       <Modal open={shortcuts} onClose={() => showShortcuts(false)} title="Keyboard shortcuts">
         <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm">
-          {[["Q or N", "Add a task"], ["⌘K or /", "Search and jump"], ["G then T", "Today"], ["G then I", "Inbox"], ["G then U", "Upcoming"], ["G then C", "Calendar"], ["G then F", "Focus"], ["G then H", "Habits"], ["G then G", "Goals"], ["G then R", "Review"], ["G then S", "Settings"], ["Esc", "Close"], ["?", "This list"]].map(([k, v]) => (
+          {[["Q or N", "Add a task"], ["⌘K or /", "Search and jump"], ["G then T", "Today"], ["G then I", "Inbox"], ["G then U", "Upcoming"], ["G then C", "Calendar"], ["G then F", "Focus"], ["G then G", "Goals"], ["G then R", "Review"], ["G then S", "Settings"], ["Esc", "Close"], ["?", "This list"]].map(([k, v]) => (
             <div key={k} className="contents"><kbd className="font-mono text-xs text-muted">{k}</kbd><span>{v}</span></div>
           ))}
         </div>

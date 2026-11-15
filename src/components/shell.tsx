@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router";
-import { Sun, Inbox, CalendarDays, CalendarRange, Timer, Repeat2, Target, NotebookPen, Settings, Plus, Hash, Search, Menu, ChevronDown, ChevronRight, Cloud, CloudOff, RefreshCw, AlertCircle, Star, Archive, CheckCircle2 } from "lucide-react";
+import { Sun, Inbox, CalendarDays, CalendarRange, Timer, Target, NotebookPen, Settings, Plus, Hash, Search, Menu, ChevronDown, ChevronRight, Cloud, CloudOff, RefreshCw, AlertCircle, Star, Archive, CheckCircle2 } from "lucide-react";
 import { useColl, useSettings } from "../lib/store";
 import { isToday, isOverdue, addProject } from "../lib/actions";
 import { openPalette, openQuickAdd } from "../lib/ui-state";
@@ -16,7 +16,6 @@ const NAV = [
   { to: "/upcoming", label: "Upcoming", icon: CalendarRange, key: "upcoming" },
   { to: "/calendar", label: "Calendar", icon: CalendarDays, key: "calendar" },
   { to: "/focus", label: "Focus", icon: Timer, key: "focus" },
-  { to: "/habits", label: "Habits", icon: Repeat2, key: "habits" },
   { to: "/goals", label: "Goals", icon: Target, key: "goals" },
   { to: "/review", label: "Review", icon: NotebookPen, key: "review" },
 ];
@@ -170,12 +169,12 @@ function MobileNav() {
         {tab("/today", "Today", Sun, counts.today)}
         {tab("/inbox", "Inbox", Inbox, counts.inbox)}
         {tab("/calendar", "Calendar", CalendarDays)}
-        {tab("/habits", "Habits", Repeat2)}
+        {tab("/goals", "Goals", Target)}
         <button onClick={() => setMore(true)} className="flex flex-1 flex-col items-center gap-0.5 pt-2 pb-1 text-[11px] text-muted"><Menu size={21} strokeWidth={1.8} />More</button>
       </nav>
       <Modal open={more} onClose={() => setMore(false)} title="Cadence">
         <div className="grid grid-cols-3 gap-2 mb-4">
-          {[...NAV.filter(n => !["today", "inbox", "calendar", "habits"].includes(n.key)), { to: "/completed", label: "Completed", icon: CheckCircle2 }, { to: "/settings", label: "Settings", icon: Settings }].map(n => (
+          {[...NAV.filter(n => !["today", "inbox", "calendar", "goals"].includes(n.key)), { to: "/completed", label: "Completed", icon: CheckCircle2 }, { to: "/settings", label: "Settings", icon: Settings }].map(n => (
             <button key={n.to} onClick={() => nav(n.to)} className="flex flex-col items-center gap-1.5 rounded-2xl bg-surface-2 py-3 text-sm"><n.icon size={20} strokeWidth={1.8} />{n.label}</button>
           ))}
           <button onClick={() => { setMore(false); openPalette(); }} className="flex flex-col items-center gap-1.5 rounded-2xl bg-surface-2 py-3 text-sm"><Search size={20} strokeWidth={1.8} />Search</button>

@@ -1,5 +1,4 @@
 import { dueMoment, today, toMin } from "./dates";
-import { dueOn, logMap, countOn } from "./habits";
 import { all, get, settings, subscribe } from "./store";
 
 // Reminders while Cadence is open (or installed and running in the background on desktop).
@@ -47,13 +46,7 @@ export function upcoming(now = Date.now()): Due[] {
       if (at > now - 10 * 60_000 && at < horizon) out.push({ key: `t:${t.id}:${r.id}:${t.due}:${t.time}`, at, title: t.title, body: t.time ? `Due ${t.due === today() ? "today" : t.due} at ${t.time}` : `Due ${t.due === today() ? "today" : t.due}`, url: `/task/${t.id}` });
     }
   }
-  const logs = logMap();
   const d = today();
-  for (const h of all("habits")) {
-    if (h.archived || !h.reminder || !dueOn(h, d) || countOn(logs, h, d) >= Math.max(1, h.target)) continue;
-    const at = new Date(); const m = toMin(h.reminder); at.setHours(Math.floor(m / 60), m % 60, 0, 0);
-    out.push({ key: `h:${h.id}:${d}`, at: at.getTime(), title: `${h.emoji} ${h.name}`.trim(), body: "Time for your habit.", url: "/habits" });
-  }
   const s = settings();
   if (s.reviewTime && !get("reviews", `day:${d}`)?.doneAt) {
     const at = new Date(); const m = toMin(s.reviewTime); at.setHours(Math.floor(m / 60), m % 60, 0, 0);

@@ -11,7 +11,6 @@ import { addDays, DAY_LONG, dayOfWeek, longDate, niceDate, today, niceTime } fro
 import { useColl, useSettings, put, all, create } from "../lib/store";
 import { aiReady, planDay } from "../lib/ai";
 import { aiProblem } from "../lib/gemini";
-import { HabitStrip } from "./habits";
 import { uid, type Task } from "../lib/model";
 import { occurrences } from "../lib/recurrence";
 
@@ -56,8 +55,6 @@ export function Today() {
         {aiReady() && (todays.length + overdue.length > 0) && <Button size="sm" variant="soft" onClick={doPlan} disabled={planning}>{planning ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />} Plan my day</Button>}
         <Button size="sm" onClick={() => nav("/review")}><MoonStar size={14} /> End the day</Button>
       </PageHeader>
-
-      <HabitStrip />
 
       {todayBlocks.length > 0 && (
         <Section title="Time blocks" right={<button className="text-xs text-muted hover:text-fg" onClick={() => nav("/calendar?view=day")}>Open day</button>}>

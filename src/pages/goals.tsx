@@ -5,7 +5,7 @@ import { Button, Empty, IconBtn, MenuItem, Modal, PageHeader, Popover, Progress,
 import { TaskRow } from "../components/task-row";
 import { InlineAdd } from "../components/quick-add";
 import {  addMonths, isoWeek, monthKey, pad, quarterKey } from "../lib/dates";
-import { currentPeriod, goalProgress, periodLabel } from "../lib/habits";
+import { currentPeriod, goalProgress, periodLabel } from "../lib/goals";
 import { PALETTE, uid, type Goal, type Horizon } from "../lib/model";
 import { create, put, remove, useColl } from "../lib/store";
 import { aiReady, suggestGoalSteps } from "../lib/ai";
@@ -74,7 +74,7 @@ function GoalCard({ goal, onEdit }: { goal: Goal; onEdit: () => void }) {
   const tasks = useColl("tasks");
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [ideas, setIdeas] = useState<{ tasks: string[]; habits: string[] } | null>(null);
+  const [ideas, setIdeas] = useState<{ tasks: string[] } | null>(null);
   const confirm = useConfirm();
   const p = goalProgress(goal, goals, tasks);
   const linked = tasks.filter(t => t.goalId === goal.id && !t.parentId);
@@ -123,7 +123,6 @@ function GoalCard({ goal, onEdit }: { goal: Goal; onEdit: () => void }) {
             <div className="rounded-xl bg-surface-2 p-3 mt-2 space-y-1">
               <div className="eyebrow">Ideas</div>
               {ideas.tasks.map(x => <div key={x} className="flex items-center gap-2 text-sm"><span className="flex-1">{x}</span><Button size="sm" variant="ghost" onClick={() => { addTask({ title: x, goalId: goal.id }); setIdeas(i => i && { ...i, tasks: i.tasks.filter(y => y !== x) }); }}><Plus size={13} /> Task</Button></div>)}
-              {ideas.habits.map(x => <div key={x} className="flex items-center gap-2 text-sm"><span className="flex-1">{x}</span><Button size="sm" variant="ghost" onClick={() => { create("habits", { id: uid(), name: x, emoji: "", color: goal.color, kind: "daily", days: [], perWeek: 3, target: 1, reminder: null, archived: false, order: 99, createdAt: new Date().toISOString(), calPushed: null }); setIdeas(i => i && { ...i, habits: i.habits.filter(y => y !== x) }); toast("Habit added"); }}><Plus size={13} /> Habit</Button></div>)}
             </div>
           )}
         </div>

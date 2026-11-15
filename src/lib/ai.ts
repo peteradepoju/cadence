@@ -73,7 +73,7 @@ Return JSON only: {"blocks":[{"taskId":"id","start":"HH:MM","end":"HH:MM"}],"not
 /** A short, honest write-up of the week from what actually happened. */
 export async function weeklyReview(facts: object, answers: Record<string, string>): Promise<string> {
   const prompt = `Write a short weekly review for a person, from the facts below (week ${weekKey(today())}). Warm, plain and honest, not gushing.
-Three short paragraphs: what got done and what it says; what slipped and a likely reason; two or three specific suggestions for next week (name tasks or habits). Under 180 words. No headings, no bullet symbols.
+Three short paragraphs: what got done and what it says; what slipped and a likely reason; two or three specific suggestions for next week (name tasks). Under 180 words. No headings, no bullet symbols.
 Facts: ${JSON.stringify(facts).slice(0, 6000)}
 Their own notes: ${JSON.stringify(answers).slice(0, 2000)}`;
   return (await generate(key(), prompt, { model: model() })).trim();
@@ -84,9 +84,9 @@ export async function dayReflection(facts: object): Promise<string> {
   return (await generate(key(), prompt, { model: model() })).trim();
 }
 
-/** Suggests a few habits or goals from a sentence ("I want to get fit and read more"). */
-export async function suggestGoalSteps(goal: string, horizon: string): Promise<{ tasks: string[]; habits: string[] }> {
-  const prompt = `A person has this ${horizon} goal: "${goal.slice(0, 400)}". Suggest up to 5 concrete one-off tasks that move it forward and up to 3 small daily or weekly habits. Return JSON only: {"tasks":["…"],"habits":["…"]}`;
-  const r = await generateJson<{ tasks?: string[]; habits?: string[] }>(key(), prompt, { model: model() });
-  return { tasks: (r.tasks ?? []).slice(0, 5), habits: (r.habits ?? []).slice(0, 3) };
+/** Suggests a few concrete tasks that move a goal forward. */
+export async function suggestGoalSteps(goal: string, horizon: string): Promise<{ tasks: string[] }> {
+  const prompt = `A person has this ${horizon} goal: "${goal.slice(0, 400)}". Suggest up to 6 concrete tasks that move it forward. Return JSON only: {"tasks":["…"]}`;
+  const r = await generateJson<{ tasks?: string[] }>(key(), prompt, { model: model() });
+  return { tasks: (r.tasks ?? []).slice(0, 6) };
 }

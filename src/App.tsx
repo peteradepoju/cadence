@@ -8,7 +8,6 @@ import { Palette } from "./components/palette";
 import { Today, Inbox, Upcoming, TagPage, CompletedPage, ArchivePage, rollPlanned } from "./pages/lists";
 import { ProjectPage } from "./pages/project";
 import { CalendarPage } from "./pages/calendar";
-import { HabitsPage } from "./pages/habits";
 import { GoalsPage } from "./pages/goals";
 import { FocusPage } from "./pages/focus";
 import { ReviewPage } from "./pages/review";
@@ -37,7 +36,7 @@ function Keys() {
       const k = e.key.toLowerCase();
       if (Date.now() - g < 1200) {
         g = 0;
-        const to = { t: "/today", i: "/inbox", u: "/upcoming", c: "/calendar", f: "/focus", h: "/habits", g: "/goals", r: "/review", s: "/settings", p: "/plan" }[k];
+        const to = { t: "/today", i: "/inbox", u: "/upcoming", c: "/calendar", f: "/focus", g: "/goals", r: "/review", s: "/settings", p: "/plan" }[k];
         if (to) { e.preventDefault(); nav(to); }
         return;
       }
@@ -86,7 +85,6 @@ export default function App() {
             <Route path="/calendar" element={<CalendarPage />} />
             <Route path="/project/:id" element={<ProjectPage />} />
             <Route path="/tag/:tag" element={<TagPage />} />
-            <Route path="/habits" element={<HabitsPage />} />
             <Route path="/goals" element={<GoalsPage />} />
             <Route path="/focus" element={<FocusPage />} />
             <Route path="/review" element={<ReviewPage />} />

@@ -14,7 +14,7 @@ export function backupJson(): Blob {
 /** Plain, readable copy of everything (for people, spreadsheets and other apps). */
 export function plainJson(): Blob {
   const out: Record<string, unknown[]> = {};
-  for (const c of ["projects", "tasks", "tags", "habits", "habitLogs", "goals", "blocks", "sessions", "reviews"] as const) out[c] = all(c);
+  for (const c of ["projects", "tasks", "tags", "goals", "blocks", "sessions", "reviews"] as const) out[c] = all(c);
   return new Blob([JSON.stringify({ app: "cadence", exportedAt: new Date().toISOString(), ...out }, null, 2)], { type: "application/json" });
 }
 

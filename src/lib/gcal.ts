@@ -1,13 +1,12 @@
 import { lastStamp, stampAt, stampMs } from "./crdt";
 import { addDays, dueMoment, fromMin, pad, toMin, today, ymd } from "./dates";
 import { gjson, gfetch, GoogleError, hasScope } from "./google";
-import type { Block, Habit, Task } from "./model";
-import { toRRule } from "./recurrence";
+import type { Block, Task } from "./model";
 import { all, getAny, put, putFrom, settings, setSettings, snapshot } from "./store";
 
 // Google Calendar: how Cadence reminds you when it's closed.
 // Cadence keeps its own "Cadence" calendar (it can't touch your other calendars). Timed tasks, tasks
-// with reminders, time blocks and habit reminders become events with pop-up alerts, so your phone's
+// with reminders and time blocks become events with pop-up alerts, so your phone's
 // Google Calendar app notifies you. Event ids come from Cadence's own ids, so every device writes the
 // same event and nothing is duplicated. Moving or deleting an event in Google Calendar comes back too.
 
@@ -15,7 +14,6 @@ const API = "https://www.googleapis.com/calendar/v3";
 const GCAL = "~gcal";
 const TASK_FIELDS = ["title", "notes", "due", "time", "duration", "reminders", "done", "deleted", "calOff", "recurrence"];
 const BLOCK_FIELDS = ["date", "start", "end", "title", "deleted"];
-const HABIT_FIELDS = ["name", "emoji", "reminder", "kind", "days", "archived", "deleted"];
 
 export const tz = () => Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
 const hex = (s: string) => Array.from(new TextEncoder().encode(s), b => b.toString(16).padStart(2, "0")).join("");
@@ -41,7 +39,7 @@ export async function ensureCalendar(): Promise<string> {
   }
   const made = await gjson<{ id: string }>(`${API}/calendars`, {
     method: "POST", headers: { "content-type": "application/json" },
-    body: JSON.stringify({ summary: "Cadence", description: "Tasks, time blocks and habit reminders from Cadence.", timeZone: tz() }),
+    body: JSON.stringify({ summary: "Cadence", description: "Tasks and time blocks from Cadence.", timeZone: tz() }),
   });
   setSettings({ calId: made.id });
   return made.id;
@@ -87,18 +85,6 @@ export function blockEvent(b: Block): GEvent | null {
   };
 }
 
-export function habitEvent(h: Habit): GEvent | null {
-  if (h.deleted || h.archived || !h.reminder || !settings().habitCalendar) return null;
-  const start = today();
-  const end = fromMin(toMin(h.reminder) + 10);
-  const rule = h.kind === "days" && h.days.length ? toRRule({ freq: "weekly", interval: 1, days: h.days }) : "RRULE:FREQ=DAILY";
-  return {
-    id: eventId("h", h.id), summary: `${h.emoji ? h.emoji + " " : ""}${h.name}`, description: `Habit from Cadence: ${appUrl()}habits`,
-    start: { dateTime: `${start}T${h.reminder}:00`, timeZone: tz() }, end: { dateTime: `${start}T${end}:00`, timeZone: tz() },
-    recurrence: [rule], transparency: "transparent", reminders: { useDefault: false, overrides: [{ method: "popup", minutes: 0 }] },
-  };
-}
-
 async function upsert(cal: string, ev: GEvent) {
   const url = `${API}/calendars/${encodeURIComponent(cal)}/events`;
   const body = JSON.stringify({ ...ev, status: "confirmed" });
@@ -141,14 +127,11 @@ async function push(cal: string) {
     if (ev) await upsert(cal, ev); else if (b.calPushed) await drop(cal, eventId("b", b.id));
     put("blocks", b.id, { calPushed: s });
   }
-  for (const r of Object.values(snap.habits ?? {})) {
-    const h = getAny("habits", r.id);
-    if (!h) continue;
-    const s = lastStamp(r, HABIT_FIELDS) + (settings().habitCalendar ? "1" : "0");
-    if (s === (h.calPushed ?? "")) continue;
-    const ev = habitEvent(h);
-    if (ev) await upsert(cal, ev); else if (h.calPushed) await drop(cal, eventId("h", h.id));
-    put("habits", h.id, { calPushed: s });
+  // Habits are gone from Cadence: take any habit reminders it put on the calendar off again.
+  for (const h of all("habits")) {
+    if (!h.calPushed) continue;
+    await drop(cal, eventId("h", h.id)).catch(() => {});
+    put("habits", h.id, { calPushed: null });
   }
 }
 
@@ -232,7 +215,6 @@ export async function syncCalendar() {
 export function resetCalendarMarks() {
   for (const t of all("tasks")) if (t.calPushed) put("tasks", t.id, { calPushed: null });
   for (const b of all("blocks")) if (b.calPushed) put("blocks", b.id, { calPushed: null });
-  for (const h of all("habits")) if (h.calPushed) put("habits", h.id, { calPushed: null });
   try { localStorage.removeItem(cursorKey); } catch {}
 }
 

@@ -121,26 +121,6 @@ describe("dates", () => {
   });
 });
 
-import { streak } from "./habits";
-describe("habit streaks", () => {
-  const h = { id: "h", name: "Read", emoji: "", color: "", kind: "daily" as const, days: [], perWeek: 3, target: 1, reminder: null, archived: false, order: 0, createdAt: "2026-10-01T00:00:00Z", calPushed: null };
-  const logs = (dates: string[]) => new Map(dates.map(d => [`h:${d}`, 1]));
-  it("counts days in a row; today not done yet doesn't break it", () => {
-    expect(streak(h, logs(["2026-11-10", "2026-11-11", "2026-11-12"]), "2026-11-13")).toEqual({ current: 3, best: 3 });
-    expect(streak(h, logs(["2026-11-10", "2026-11-11", "2026-11-12", "2026-11-13"]), "2026-11-13").current).toBe(4);
-    expect(streak(h, logs(["2026-11-05", "2026-11-06", "2026-11-07", "2026-11-12"]), "2026-11-13")).toEqual({ current: 1, best: 3 });
-  });
-  it("skips days the habit isn't expected", () => {
-    const mwf = { ...h, kind: "days" as const, days: [1, 3, 5] };
-    expect(streak(mwf, logs(["2026-11-09", "2026-11-11"]), "2026-11-13").current).toBe(2); // Mon, Wed; Fri (today) open
-  });
-  it("weekly habits count weeks", () => {
-    const w = { ...h, kind: "weekly" as const, perWeek: 2 };
-    // weeks starting Mon 2 Nov and Mon 26 Oct each have two days; this week has none yet
-    expect(streak(w, logs(["2026-11-02", "2026-11-04", "2026-10-27", "2026-10-29"]), "2026-11-13").current).toBe(2);
-  });
-});
-
 import { taskEvents, eventId } from "./gcal";
 import { newTask } from "./model";
 describe("calendar events", () => {
