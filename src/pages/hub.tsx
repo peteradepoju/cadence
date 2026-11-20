@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
-import { Blocks, Check, ExternalLink, Flame, Loader2, Lock, Plus, RefreshCw, Settings2, X } from "lucide-react";
+import { Blocks, Check, ExternalLink, Flame, Loader2, Lock, Plus, RefreshCw, Settings2, Sparkles, X } from "lucide-react";
 import { Page } from "../components/shell";
 import { Button, Empty, PageHeader, Section, Toggle, cx, toast } from "../components/ui";
 import { accept, configFor, dailyBudget, dismiss, propose, pull, setConfig, waiting, type Placement } from "../lib/hub/hub";
 import { SOURCES, sourceById } from "../lib/hub/sources";
+import { aiPlan, type AiPlan } from "../lib/hub/plan-ai";
+import { aiReady } from "../lib/ai";
+import { aiProblem } from "../lib/gemini";
 import { plans } from "../lib/hub/bible";
 import type { HubConfig, HubField, HubSource } from "../lib/hub/types";
 import { DAY_LONG, minutesLabel, niceDate, today } from "../lib/dates";
@@ -19,6 +22,8 @@ export function HubPage() {
   const [busy, setBusy] = useState(false);
   const [plan, setPlan] = useState<Placement[] | null>(null);
   const [dropped, setDropped] = useState<Set<string>>(new Set());
+  const [ai, setAi] = useState<{ note: string; dropped: AiPlan["dropped"] } | null>(null);
+  const [thinking, setThinking] = useState(false);
 
   const on = SOURCES.filter(x => configFor(x.id).on);
   const ready = on.filter(x => !x.problem(configFor(x.id)));
@@ -29,6 +34,7 @@ export function HubPage() {
       const r = await pull();
       setPlan(propose());
       setDropped(new Set());
+      setAi(null);
       if (r.added) toast(`${r.added} new ${r.added === 1 ? "item" : "items"} from your apps`);
     } catch { toast("Couldn't reach one of your apps.", { tone: "error" }); }
     setBusy(false);
@@ -49,6 +55,18 @@ export function HubPage() {
     for (const p of shown) m.set(p.date, [...(m.get(p.date) ?? []), p]);
     return [...m.entries()].sort((a, b) => a[0].localeCompare(b[0]));
   }, [shown]);
+
+  const planWithAi = async () => {
+    setThinking(true);
+    try {
+      const r = await aiPlan();
+      setPlan(r.placements);
+      setDropped(new Set());
+      setAi(r.fellBack ? null : { note: r.note, dropped: r.dropped });
+      toast(r.fellBack ? "Planned without the AI this time" : `Planned ${r.placements.length}`, r.fellBack ? { tone: "error" } : {});
+    } catch (e) { toast(aiProblem(e), { tone: "error" }); }
+    setThinking(false);
+  };
 
   const acceptAll = () => {
     let n = 0;
@@ -77,6 +95,11 @@ export function HubPage() {
           : open.length ? `${open.length} waiting, but none of it fits the fortnight ahead. Give the hub more time a day, or turn a course off for now.`
           : "Nothing waiting. Your apps are up to date."}>
         <Button size="sm" onClick={() => void refresh()} disabled={busy}>{busy ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />} Check apps</Button>
+        {aiReady() && open.length > 0 && (
+          <Button size="sm" variant="soft" onClick={() => void planWithAi()} disabled={thinking}>
+            {thinking ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />} Plan it for me
+          </Button>
+        )}
         <Button size="sm" onClick={() => nav("/settings#hub")}><Settings2 size={14} /> Apps</Button>
         {shown.length > 0 && <Button size="sm" variant="primary" onClick={acceptAll}><Check size={14} /> Accept {shown.length}</Button>}
       </PageHeader>
@@ -85,6 +108,10 @@ export function HubPage() {
         <p className="mb-4 text-sm text-warning">
           {on.length - ready.length} app{on.length - ready.length === 1 ? " still needs" : "s still need"} setting up in Settings before {on.length - ready.length === 1 ? "it" : "they"} can offer anything.
         </p>
+      )}
+
+      {ai?.note && (
+        <p className="mb-4 rounded-xl bg-accent-soft/60 px-4 py-3 text-sm">{ai.note}</p>
       )}
 
       {!shown.length && !busy && (
@@ -101,6 +128,18 @@ export function HubPage() {
           </Section>
         );
       })}
+
+      {ai && ai.dropped.length > 0 && (
+        <Section title="Not this fortnight" right={<span className="text-xs text-faint">{ai.dropped.length}</span>}>
+          <p className="mb-2 text-xs text-muted">Said plainly rather than quietly dropped. These stay on the shelf and can be offered again.</p>
+          {ai.dropped.slice(0, 40).map(d => (
+            <div key={d.shelfId} className="flex items-baseline gap-3 py-1.5 border-b border-border/50 last:border-b-0">
+              <span className="min-w-0 flex-1 truncate text-sm text-muted">{d.title}</span>
+              <span className="flex-none text-xs text-faint">{d.why}</span>
+            </div>
+          ))}
+        </Section>
+      )}
     </Page>
   );
 }
