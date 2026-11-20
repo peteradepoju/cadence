@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
-import { Blocks, Check, ExternalLink, Flame, Loader2, Lock, RefreshCw, Settings2, X } from "lucide-react";
+import { Blocks, Check, ExternalLink, Flame, Loader2, Lock, Plus, RefreshCw, Settings2, X } from "lucide-react";
 import { Page } from "../components/shell";
 import { Button, Empty, PageHeader, Section, Toggle, cx, toast } from "../components/ui";
 import { accept, configFor, dailyBudget, dismiss, propose, pull, setConfig, waiting, type Placement } from "../lib/hub/hub";
@@ -152,6 +152,45 @@ export function ConnectedApps() {
         </div>
       </div>
       {SOURCES.map(source => <SourceCard key={source.id} source={source} />)}
+      <FeedFormat />
+    </div>
+  );
+}
+
+/** What any other app has to serve to join the hub. */
+function FeedFormat() {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="rounded-xl border border-dashed border-border p-3">
+      <button className="flex w-full items-center justify-between gap-3 text-left" onClick={() => setOpen(v => !v)}>
+        <span className="min-w-0">
+          <span className="block text-[15px]">Add another app</span>
+          <span className="block text-xs text-muted">Any app that serves this small JSON document can join the hub.</span>
+        </span>
+        <Plus size={16} className={cx("flex-none text-muted transition-transform", open && "rotate-45")} />
+      </button>
+      {open && (
+        <div className="mt-3 space-y-2">
+          <p className="text-xs text-muted">Serve it at any address, allow other sites to read it (an <code>access-control-allow-origin</code> header), then paste the address into Selah, Life OS or a new card. Only <code>id</code> and <code>title</code> are required.</p>
+          <pre className="overflow-x-auto rounded-lg bg-surface-2 p-3 text-[11px] leading-relaxed">{`[
+  {
+    "id": "loan-7",            // stable: this is what stops duplicates
+    "title": "Repay the tailor",
+    "due": "2026-11-28",       // optional
+    "minutes": 20,             // optional, but the planner needs it to weigh the day
+    "url": "https://…",        // optional: opens it back in your app
+    "dayLock": 6,              // optional, 0-6: defers a week, not a day
+    "streak": false,           // optional: shrink rather than push
+    "gate": false,             // optional: blocks the rest of that app
+    "priority": 2,             // optional, 1-4
+    "project": "Selah",        // optional
+    "tags": ["money"],         // optional
+    "kind": "payment",         // lesson | review | reading | project | deadline | payment | application
+    "done": false              // optional: already finished over there
+  }
+]`}</pre>
+        </div>
+      )}
     </div>
   );
 }

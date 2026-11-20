@@ -222,16 +222,18 @@ describe("accepting", () => {
 });
 
 describe("the source registry", () => {
-  it("every source declares what it needs and refuses to run without it", () => {
+  it("every source is findable and says what it needs", () => {
     for (const s of SOURCES) {
-      expect(s.problem({})).toBeTruthy();
       expect(s.fields.length).toBeGreaterThan(0);
       expect(sourceById(s.id)).toBe(s);
+      // A source that needs setting up must refuse an empty config; one that needs nothing must not.
+      if (s.needs === "none") expect(s.problem({})).toBeNull();
+      else expect(s.problem({})).toBeTruthy();
     }
   });
 
-  it("a source with a broken config yields nothing rather than throwing", async () => {
-    for (const s of SOURCES) {
+  it("a source that needs setting up yields nothing rather than throwing", async () => {
+    for (const s of SOURCES.filter(x => x.needs !== "none")) {
       await expect(Promise.resolve(s.items({ from: MON, to: SAT, config: {} }))).resolves.toEqual([]);
     }
   });

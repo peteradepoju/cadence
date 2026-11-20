@@ -2,6 +2,8 @@ import { addDays, DAY_LONG, dayOfWeek } from "../dates";
 import { CURRICULA, positionOn, slotFor } from "./curricula";
 import { describeDay, minutesFor, planById, planDay } from "./bible";
 import { bookById } from "./books";
+import { lifeOsSource, selahSource } from "./feeds";
+import { engramSource, euroniaSource } from "./engram";
 import type { HubCtx, HubItem, HubSource } from "./types";
 
 // Every app Cadence pulls from, behind one interface. A new one is a `items()` that returns
@@ -109,7 +111,7 @@ const bibleSource: HubSource = {
   },
 };
 
-export const SOURCES: HubSource[] = [bibleSource, ...courseSources];
+export const SOURCES: HubSource[] = [bibleSource, engramSource, euroniaSource, ...courseSources, selahSource, lifeOsSource];
 export const sourceById = (id: string) => SOURCES.find(s => s.id === id);
 
 /** "Saturday" — used when explaining why something moved a week. */
