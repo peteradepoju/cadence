@@ -23,7 +23,7 @@ export function Palette() {
     const base: Item[] = [
       { id: "add", label: "Add task", hint: "Q", icon: <Plus size={16} />, run: () => { closePalette(); openQuickAdd(); } },
       { id: "today", label: "Today", hint: "G T", icon: <Sun size={16} />, run: go("/today") },
-      { id: "inbox", label: "Inbox", hint: "G I", icon: <Inbox size={16} />, run: go("/inbox") },
+      { id: "inbox", label: "Unsorted", hint: "G I", icon: <Inbox size={16} />, run: go("/inbox") },
       { id: "up", label: "Upcoming", hint: "G U", icon: <CalendarRange size={16} />, run: go("/upcoming") },
       { id: "cal", label: "Calendar", hint: "G C", icon: <CalendarDays size={16} />, run: go("/calendar") },
       { id: "focus", label: "Focus", hint: "G F", icon: <Timer size={16} />, run: go("/focus") },
@@ -42,7 +42,7 @@ export function Palette() {
     const words = s.split(/\s+/);
     const match = (text: string) => words.every(w => text.toLowerCase().includes(w));
     const found = tasks.filter(t => match(t.title + " " + t.notes + " " + t.tags.join(" "))).sort((a, b) => Number(a.done) - Number(b.done)).slice(0, 30)
-      .map(t => ({ id: "x" + t.id, label: t.title, hint: t.done ? "done" : t.due ? niceDate(t.due) : projects.find(p => p.id === t.projectId)?.name ?? "Inbox", icon: <CheckCircle2 size={16} className={t.done ? "text-accent" : "text-faint"} />, done: t.done, run: () => { closePalette(); nav(`?task=${t.id}`); } }));
+      .map(t => ({ id: "x" + t.id, label: t.title, hint: t.done ? "done" : t.due ? niceDate(t.due) : projects.find(p => p.id === t.projectId)?.name ?? "No project", icon: <CheckCircle2 size={16} className={t.done ? "text-accent" : "text-faint"} />, done: t.done, run: () => { closePalette(); nav(`?task=${t.id}`); } }));
     return [...base.filter(b => match(b.label)), ...found];
   }, [q, tasks, projects, tags]);
 
@@ -72,7 +72,7 @@ export function Palette() {
       </Modal>
       <Modal open={shortcuts} onClose={() => showShortcuts(false)} title="Keyboard shortcuts">
         <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm">
-          {[["Q or N", "Add a task"], ["⌘K or /", "Search and jump"], ["G then T", "Today"], ["G then I", "Inbox"], ["G then U", "Upcoming"], ["G then C", "Calendar"], ["G then F", "Focus"], ["G then G", "Goals"], ["G then R", "Review"], ["G then S", "Settings"], ["Esc", "Close"], ["?", "This list"]].map(([k, v]) => (
+          {[["Q or N", "Add a task"], ["⌘K or /", "Search and jump"], ["G then T", "Today"], ["G then I", "Unsorted"], ["G then U", "Upcoming"], ["G then C", "Calendar"], ["G then F", "Focus"], ["G then G", "Goals"], ["G then R", "Review"], ["G then S", "Settings"], ["Esc", "Close"], ["?", "This list"]].map(([k, v]) => (
             <div key={k} className="contents"><kbd className="font-mono text-xs text-muted">{k}</kbd><span>{v}</span></div>
           ))}
         </div>

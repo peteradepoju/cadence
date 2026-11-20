@@ -206,7 +206,7 @@ export function NotesEditor({ value, onSave, placeholder = "Notes, links, detail
         ))}
         <div className="flex-1" />
         <button type="button" onMouseDown={e => e.preventDefault()} onClick={() => { save(); setEditing(false); }}
-          className="inline-flex items-center gap-1 h-8 px-2.5 rounded-lg text-[13px] text-muted hover:bg-surface-2 hover:text-fg"><Eye size={14} /> Done</button>
+          className="inline-flex items-center gap-1 h-8 px-2.5 rounded-lg text-[13px] text-muted hover:bg-surface-2 hover:text-fg"><Eye size={14} /> Preview</button>
       </div>
       <textarea ref={ref} value={text} placeholder={placeholder}
         onChange={e => setText(e.target.value)}

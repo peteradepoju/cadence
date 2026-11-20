@@ -83,7 +83,7 @@ function BoardCard({ task, overlay }: { task: Task; overlay?: boolean }) {
 function ColumnView({ col, tasks, projectId }: { col: Column; tasks: Task[]; projectId: string }) {
   const { setNodeRef, isOver } = useDroppable({ id: `col:${col.id}` });
   return (
-    <div className="flex-none w-[280px] md:w-[290px] flex flex-col max-h-[calc(100vh-200px)]">
+    <div className="flex-none w-[280px] md:flex-1 md:w-auto md:min-w-[250px] md:max-w-[360px] flex flex-col max-h-[calc(100vh-200px)]">
       <div className="flex items-center gap-2 px-1 mb-2">
         <span className={cx("size-2 rounded-full", col.kind === "done" ? "bg-success" : col.kind === "doing" ? "bg-warning" : "bg-faint")} />
         <h3 className="text-sm font-medium">{col.name}</h3>
@@ -135,7 +135,7 @@ function Board({ project, tasks }: { project: Project; tasks: Task[] }) {
 
 function AddColumn({ project }: { project: Project }) {
   const [name, setName] = useState<string | null>(null);
-  if (name === null) return <button onClick={() => setName("")} className="flex-none w-[200px] h-10 rounded-xl border border-dashed border-border text-sm text-muted hover:text-fg flex items-center justify-center gap-1.5"><Plus size={15} /> Add column</button>;
+  if (name === null) return <button onClick={() => setName("")} className="flex-none w-[170px] h-10 rounded-xl border border-dashed border-border text-sm text-muted hover:text-fg flex items-center justify-center gap-1.5"><Plus size={15} /> Add column</button>;
   const add = () => {
     if (!name.trim()) { setName(null); return; }
     const cols = [...project.columns];
@@ -166,7 +166,8 @@ export function ProjectEditor({ open, onClose, project }: { open: boolean; onClo
         </div>
         <textarea className="field min-h-20" placeholder="What is this project for?" value={notes} onChange={e => setNotes(e.target.value)} />
         <div>
-          <div className="eyebrow mb-1.5">Columns (board view and status)</div>
+          <div className="eyebrow mb-1">Statuses</div>
+          <p className="mb-2 text-xs text-faint">These are the board’s columns and the statuses you can set on a task. The name is yours; the type tells Cadence which one means not started and which one counts as done.</p>
           <DndContext sensors={sensors} onDragEnd={e => { if (!e.over) return; const a = cols.findIndex(c => c.id === e.active.id), b = cols.findIndex(c => c.id === e.over!.id); if (a < 0 || b < 0) return; const n = [...cols]; const [m] = n.splice(a, 1); n.splice(b, 0, m); setCols(n); }}>
             <SortableContext items={cols.map(c => c.id)} strategy={verticalListSortingStrategy}>
               {cols.map(c => <ColumnRow key={c.id} col={c} onChange={p => setCols(cs => cs.map(x => x.id === c.id ? { ...x, ...p } : x))} onRemove={cols.length > 1 ? () => setCols(cs => cs.filter(x => x.id !== c.id)) : undefined} />)}

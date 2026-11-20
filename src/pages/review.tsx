@@ -126,7 +126,7 @@ function WeekReview() {
   const maxDay = Math.max(1, ...perDay);
   const byProject = useMemo(() => {
     const m = new Map<string, number>();
-    for (const x of done) { const n = x.projectId ? get("projects", x.projectId)?.name ?? "Other" : "Inbox"; m.set(n, (m.get(n) ?? 0) + 1); }
+    for (const x of done) { const n = x.projectId ? get("projects", x.projectId)?.name ?? "Other" : "Unsorted"; m.set(n, (m.get(n) ?? 0) + 1); }
     return [...m].sort((a, b) => b[1] - a[1]);
   }, [done]);
   const weekGoals = goals.filter(g => g.status === "active" && (g.period === wk || g.horizon === "month" || g.horizon === "quarter"));

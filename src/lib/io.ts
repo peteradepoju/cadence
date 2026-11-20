@@ -21,7 +21,7 @@ export function plainJson(): Blob {
 export function tasksCsv(): Blob {
   const esc = (v: unknown) => { const s = v == null ? "" : String(v); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
   const rows = [["Title", "Project", "Due", "Time", "Priority", "Tags", "Done", "Done at", "Notes"]];
-  for (const t of all("tasks")) rows.push([t.title, t.projectId ? get("projects", t.projectId)?.name ?? "" : "Inbox", t.due ?? "", t.time ?? "", String(t.priority), t.tags.join(" "), t.done ? "yes" : "", t.doneAt ?? "", t.notes]);
+  for (const t of all("tasks")) rows.push([t.title, t.projectId ? get("projects", t.projectId)?.name ?? "" : "Unsorted", t.due ?? "", t.time ?? "", String(t.priority), t.tags.join(" "), t.done ? "yes" : "", t.doneAt ?? "", t.notes]);
   return new Blob([rows.map(r => r.map(esc).join(",")).join("\n")], { type: "text/csv" });
 }
 

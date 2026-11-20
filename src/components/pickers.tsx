@@ -156,7 +156,7 @@ export function ProjectMenu({ value, onChange, close }: { value: string | null; 
     <div className="w-[260px] max-w-full mx-auto">
       <input autoFocus className="field mb-1" placeholder="Find or make a project" value={q} onChange={e => setQ(e.target.value)}
         onKeyDown={e => { if (e.key === "Enter") { if (shown[0]) onChange(shown[0].id); else if (q.trim()) onChange(addProject({ name: q.trim() }).id); close(); } }} />
-      {!q && <MenuItem icon={<Inbox size={16} />} active={value === null} onClick={() => { onChange(null); close(); }}>Inbox</MenuItem>}
+      {!q && <MenuItem icon={<Inbox size={16} />} active={value === null} onClick={() => { onChange(null); close(); }} hint="Unsorted">No project</MenuItem>}
       {shown.map(p => <MenuItem key={p.id} icon={p.emoji ? <span>{p.emoji}</span> : <Dot color={p.color} />} active={value === p.id} onClick={() => { onChange(p.id); close(); }}>{p.name}</MenuItem>)}
       {q.trim() && !projects.some(p => p.name.toLowerCase() === q.trim().toLowerCase()) && (
         <MenuItem icon={<Plus size={16} />} onClick={() => { onChange(addProject({ name: q.trim() }).id); close(); }}>New project “{q.trim()}”</MenuItem>
@@ -204,7 +204,7 @@ export function ProjectChip({ value, onChange }: { value: string | null; onChang
   const projects = useColl("projects");
   const p = projects.find(x => x.id === value);
   return (
-    <Popover trigger={({ toggle }) => <Chip icon={p ? (p.emoji ? <span>{p.emoji}</span> : <Dot color={p.color} />) : <Inbox size={14} />} onClick={toggle}>{p?.name ?? "Inbox"}</Chip>}>
+    <Popover trigger={({ toggle }) => <Chip icon={p ? (p.emoji ? <span>{p.emoji}</span> : <Dot color={p.color} />) : <Inbox size={14} />} onClick={toggle}>{p?.name ?? "No project"}</Chip>}>
       {close => <ProjectMenu value={value} onChange={onChange} close={close} />}
     </Popover>
   );
@@ -212,7 +212,7 @@ export function ProjectChip({ value, onChange }: { value: string | null; onChang
 
 export function PriorityChip({ value, onChange }: { value: Priority; onChange: (p: Priority) => void }) {
   return (
-    <Popover trigger={({ toggle }) => <Chip icon={<Flag size={14} fill={value < 4 ? `var(--p${value})` : "none"} style={{ color: value < 4 ? `var(--p${value})` : undefined }} />} active={value < 4} onClick={toggle}>{value < 4 ? `P${value}` : "Priority"}</Chip>}>
+    <Popover trigger={({ toggle }) => <Chip icon={<Flag size={14} fill={value < 4 ? `var(--p${value})` : "none"} style={{ color: value < 4 ? `var(--p${value})` : undefined }} />} active={value < 4} onClick={toggle}>{value < 4 ? PRIORITY_LABEL[value] : "Priority"}</Chip>}>
       {close => <PriorityMenu value={value} onChange={onChange} close={close} />}
     </Popover>
   );

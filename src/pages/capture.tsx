@@ -51,7 +51,7 @@ export function CapturePage() {
       {added ? (
         <Empty icon={<Check size={30} className="text-accent" />} title="Added to Cadence">
           <p>{added.title}{added.due ? ` · ${niceDate(added.due)}` : ""}</p>
-          <div className="flex justify-center gap-2 mt-4"><Button variant="primary" onClick={() => nav("/inbox")}>Open Inbox</Button><Button onClick={() => window.close()}>Close</Button></div>
+          <div className="flex justify-center gap-2 mt-4"><Button variant="primary" onClick={() => nav("/inbox")}>Open Unsorted</Button><Button onClick={() => window.close()}>Close</Button></div>
         </Empty>
       ) : <Empty title="Nothing to add">This link adds a task when it has a title: /add?title=Call%20mum</Empty>}
     </Page>

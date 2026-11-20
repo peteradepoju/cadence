@@ -84,7 +84,7 @@ export function Today() {
       </Section>
 
       {room > 0 && suggestions.length > 0 && (
-        <Section title="Could do today" right={<span className="text-xs text-faint">from Inbox and projects</span>}>
+        <Section title="Could do today" right={<span className="text-xs text-faint">from Unsorted and projects</span>}>
           {suggestions.slice(0, room + 1).map(x => (
             <div key={x.id} className="flex items-center">
               <div className="flex-1 min-w-0"><TaskRow task={x} /></div>
@@ -103,14 +103,14 @@ export function Today() {
   );
 }
 
-export function Inbox() {
+export function Unsorted() {
   const tasks = useColl("tasks");
   const open = tasks.filter(t => !t.projectId && !t.parentId && !t.done).sort(byOrder);
   const done = tasks.filter(t => !t.projectId && !t.parentId && t.done);
   return (
     <Page>
-      <PageHeader title="Inbox" sub="Everything lands here first. Give it a date, a project, or just do it." />
-      <TaskList tasks={open} addDefaults={{}} completed={done} hideProject empty={<Empty icon={<InboxIcon size={28} />} title="Inbox zero">Press Q anywhere to capture a thought.</Empty>} />
+      <PageHeader title="Unsorted" sub="Tasks that aren’t in a project yet. Give one a project, a date, or just do it." />
+      <TaskList tasks={open} addDefaults={{}} completed={done} hideProject empty={<Empty icon={<InboxIcon size={28} />} title="Nothing unsorted">Press Q anywhere to capture a thought.</Empty>} />
     </Page>
   );
 }

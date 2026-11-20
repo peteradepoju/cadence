@@ -13,15 +13,15 @@ Live: https://peteradepoju.github.io/cadence/
 | Area | What you get |
 | --- | --- |
 | Capture | Quick add anywhere (`Q`), natural language: `call mum fri 6pm #family !2 /Home every week for 30m`; paste several lines for several tasks; **Smart** capture with AI for looser sentences |
-| Tasks | Inbox, projects, subtasks (nested), tags, four priorities, due dates and times, durations, repeats (daily, weekly on days, monthly by date or "2nd Tuesday", yearly, every N, after done, until), notes, files, reminders, energy level, links to goals |
-| Views | Today (overdue, today, time blocks, "could do today"), Inbox, Upcoming (two weeks, with repeat previews), project list or **board** (your own columns), tags, completed, search (`⌘K`) |
+| Tasks | Unsorted, projects, subtasks (nested), tags, four priorities, due dates and times, durations, repeats (daily, weekly on days, monthly by date or "2nd Tuesday", yearly, every N, after done, until), notes, files, reminders, status, links to goals |
+| Views | Today (overdue, today, time blocks, "could do today"), Unsorted, Upcoming (two weeks, with repeat previews), project list or **board** (your own columns), tags, completed, search (`⌘K`) |
 | Calendar | Month, week and day; drag tasks between days; **time blocking**: drag tasks onto times, move and resize blocks; your Google calendars alongside (optional) |
 | Goals | Year → quarter → month → week, nested; progress from linked tasks and smaller goals, or by hand; AI suggests steps |
 | Focus | Pomodoro timer tied to a task, keeps running across pages, logs time to the task, weekly chart |
 | Reviews | End of day: what got done, carry the rest forward (or drop the date), energy, notes, AI reflection. Weekly: numbers, where the work went, slipped tasks, AI write-up, then plan the week |
 | Planning | Plan the week by hand or with AI (deadlines, priorities, your energy pattern, calendar); AI "plan my day" into time blocks; AI "break it down" into subtasks |
 | Sync | Every device syncs through Drive, **field by field**: edits on two devices at once are both kept |
-| Google Tasks | Two-way: Inbox ↔ My Tasks, each project ↔ a list; lists made in Google become projects |
+| Google Tasks | Two-way: Unsorted ↔ My Tasks, each project ↔ a list; lists made in Google become projects |
 | Google Calendar | A `Cadence` calendar gets timed tasks, reminders and time blocks, so your phone alerts you when Cadence is closed. Moving or deleting there comes back |
 | Other apps | `…/cadence/add?title=…` adds a task from anywhere (Lumen, Selah, a bookmarklet); share to Cadence on phones |
 | Bring and take | Import from Selah, Todoist (CSV) and Google Tasks; export a backup, readable JSON, CSV or `.ics` |

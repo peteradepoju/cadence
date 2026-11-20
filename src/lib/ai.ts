@@ -36,7 +36,7 @@ Return JSON only: {"steps":[{"title":"verb-first step","minutes":number}]}`;
 export interface PlanItem { taskId: string; date: string; time?: string | null; minutes?: number | null; why?: string }
 
 function taskLine(t: Task) {
-  return { id: t.id, title: t.title, due: t.due, time: t.time, priority: t.priority, minutes: t.duration, energy: t.energy, project: t.projectId ? all("projects").find(p => p.id === t.projectId)?.name : "Inbox", planned: t.plannedFor };
+  return { id: t.id, title: t.title, due: t.due, time: t.time, priority: t.priority, minutes: t.duration, energy: t.energy, project: t.projectId ? all("projects").find(p => p.id === t.projectId)?.name : "Unsorted", planned: t.plannedFor };
 }
 
 /** Spreads open tasks over the coming days, matching hard work to the person's high-energy times. */

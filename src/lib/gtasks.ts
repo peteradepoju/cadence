@@ -6,7 +6,7 @@ import { completeTask } from "./actions";
 import { all, DEVICE, get, getAny, put, putFrom, settings, setSettings, snapshot } from "./store";
 
 // Two-way sync with Google Tasks.
-//  • The Inbox syncs with your default Google list ("My Tasks"); each project with a list of the same name.
+//  • Tasks with no project (Unsorted) sync with your default Google list ("My Tasks"); each project with a list of the same name.
 //  • Lists made in Google Tasks become projects in Cadence.
 //  • Title, notes, due date, done and subtasks go both ways. An edit made in Google Tasks counts as made at
 //    the time Google says it was, so it wins or loses against Cadence edits field by field, like any device.

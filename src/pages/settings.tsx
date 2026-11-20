@@ -65,7 +65,7 @@ export function SettingsPage() {
     resetGTasksCursors();
     setSettings({ gtasksOn: true });
     void syncNow();
-    toast("Google Tasks connected", { sub: "Your Inbox syncs with “My Tasks”, each project with a list of its name." });
+    toast("Google Tasks connected", { sub: "Unsorted syncs with “My Tasks”, each project with a list of its name." });
   };
   const turnCal = async (on: boolean) => {
     if (!on) { setSettings({ calOn: false }); dropScope("calendar"); return; }
@@ -113,7 +113,7 @@ export function SettingsPage() {
               <Toggle on={autoResume()} onChange={v => { setAutoResume(v); toast(v ? "On" : "Off"); }} />
             </Row>
             <div className="border-t border-border pt-3" />
-            <Row label={<span className="inline-flex items-center gap-1.5"><ListChecks size={16} /> Google Tasks, both ways</span>} hint="Inbox ↔ My Tasks, each project ↔ a list with its name. Lists you make in Google Tasks become projects.">
+            <Row label={<span className="inline-flex items-center gap-1.5"><ListChecks size={16} /> Google Tasks, both ways</span>} hint="Unsorted ↔ My Tasks, each project ↔ a list with its name. Lists you make in Google Tasks become projects.">
               <Toggle on={s.gtasksOn && hasScope("tasks")} onChange={turnTasks} />
             </Row>
             <Row label={<span className="inline-flex items-center gap-1.5"><CalendarDays size={16} /> Reminders through Google Calendar</span>} hint="Timed tasks, reminders and time blocks go on a “Cadence” calendar, so your phone alerts you when Cadence is closed. Moving them there moves them here.">
@@ -207,7 +207,7 @@ export function SettingsPage() {
         </div>
       </Card>
 
-      <Card title="Add from other apps" icon={<Link2 size={20} />} sub="Lumen, Selah or anything else can send a task to Cadence by opening a link. It works on any device; the task waits in your Inbox.">
+      <Card title="Add from other apps" icon={<Link2 size={20} />} sub="Lumen, Selah or anything else can send a task to Cadence by opening a link. It works on any device; the task waits in Unsorted.">
         <div className="rounded-xl bg-surface-2 p-3 font-mono text-[12px] break-all">{capture}<span className="text-muted">Read%2020%20pages</span>&amp;due=today&amp;notes=…&amp;link=…&amp;source=lumen</div>
         <div className="flex flex-wrap gap-2">
           <Button size="sm" onClick={() => { navigator.clipboard?.writeText(capture); toast("Copied"); }}><Copy size={14} /> Copy link</Button>

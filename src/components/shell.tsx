@@ -12,7 +12,7 @@ import { pad } from "../lib/dates";
 
 const NAV = [
   { to: "/today", label: "Today", icon: Sun, key: "today" },
-  { to: "/inbox", label: "Inbox", icon: Inbox, key: "inbox" },
+  { to: "/inbox", label: "Unsorted", icon: Inbox, key: "inbox" },
   { to: "/upcoming", label: "Upcoming", icon: CalendarRange, key: "upcoming" },
   { to: "/calendar", label: "Calendar", icon: CalendarDays, key: "calendar" },
   { to: "/focus", label: "Focus", icon: Timer, key: "focus" },
@@ -167,7 +167,7 @@ function MobileNav() {
       </button>
       <nav className="md:hidden fixed z-30 inset-x-0 bottom-0 border-t border-border bg-bg/95 backdrop-blur safe-bottom flex">
         {tab("/today", "Today", Sun, counts.today)}
-        {tab("/inbox", "Inbox", Inbox, counts.inbox)}
+        {tab("/inbox", "Unsorted", Inbox, counts.inbox)}
         {tab("/calendar", "Calendar", CalendarDays)}
         {tab("/goals", "Goals", Target)}
         <button onClick={() => setMore(true)} className="flex flex-1 flex-col items-center gap-0.5 pt-2 pb-1 text-[11px] text-muted"><Menu size={21} strokeWidth={1.8} />More</button>
@@ -206,5 +206,6 @@ export function Shell({ children }: { children: ReactNode }) {
 }
 
 export function Page({ children, wide }: { children: ReactNode; wide?: boolean }) {
-  return <div className={cx("mx-auto px-4 md:px-10 pt-4 md:pt-10", wide ? "max-w-[1200px]" : "max-w-[760px]")}>{children}</div>;
+  // Wide pages (board, calendar, plan) use nearly the whole window; reading pages stay narrow.
+  return <div className={cx("mx-auto pt-4 md:pt-10", wide ? "max-w-[1760px] px-4 md:px-6" : "max-w-[760px] px-4 md:px-10")}>{children}</div>;
 }

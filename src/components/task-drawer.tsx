@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router";
-import { X, Trash2, Copy, Bell, Plus, Paperclip, Sparkles, Loader2, Timer, Target, Zap, Columns3, ExternalLink, Download, CalendarClock, FileText, ImageOff, ImagePlus, ChevronLeft, ChevronRight } from "lucide-react";
+import { X, Trash2, Copy, Bell, Plus, Paperclip, Sparkles, Loader2, Timer, ExternalLink, Download, CalendarClock, FileText, ImageOff, ImagePlus, ChevronLeft, ChevronRight } from "lucide-react";
 import { NotesEditor } from "./notes";
-import type { Attachment, Task } from "../lib/model";
-import { addTask, deleteTask, moveToProject, setColumn, timeSpent, updateTask } from "../lib/actions";
+import type { Attachment, Column, Project, Task } from "../lib/model";
+import { addTask, completeTask, deleteTask, moveToProject, reopenTask, setColumn, timeSpent, updateTask } from "../lib/actions";
 import { aiReady, breakDown } from "../lib/ai";
 import { minutesLabel, niceDate, today } from "../lib/dates";
 import { aiProblem } from "../lib/gemini";
-import { type Energy, type Reminder, uid } from "../lib/model";
+import { type Reminder, uid } from "../lib/model";
 import { all, get, put, useColl, useRec, settings } from "../lib/store";
 import { fileBlob } from "../lib/sync";
 import { idb } from "../lib/idb";
@@ -47,7 +47,6 @@ function Editor({ id, onClose }: { id: string; onClose: () => void }) {
   const task = useRec("tasks", id)!;
   const allTasks = useColl("tasks");
   const projects = useColl("projects");
-  const goals = useColl("goals").filter(g => g.status === "active");
   const sessions = useColl("sessions");
   const nav = useNavigate();
   const [title, setTitle] = useState(task.title);
@@ -58,7 +57,6 @@ function Editor({ id, onClose }: { id: string; onClose: () => void }) {
   const parent = task.parentId ? get("tasks", task.parentId) : undefined;
   const spent = timeSpent(id);
   void sessions;
-  const goal = goals.find(g => g.id === task.goalId) ?? (task.goalId ? get("goals", task.goalId) : undefined);
 
   const saveTitle = () => { const t = title.trim(); if (t && t !== task.title) updateTask(id, { title: t }); else setTitle(task.title); };
 
@@ -96,7 +94,7 @@ function Editor({ id, onClose }: { id: string; onClose: () => void }) {
   return (
     <div className="flex flex-col min-h-full" onPaste={e => { const f = e.clipboardData?.files; if (f && f.length) { e.preventDefault(); void addFiles(f); toast(f.length > 1 ? `Attached ${f.length} files` : "Attached"); } }}>
       <div className="flex items-center gap-1 px-4 pt-3 pb-1 sticky top-0 bg-surface z-[1]">
-        {parent ? <button className="text-xs text-muted hover:text-fg truncate max-w-[60%]" onClick={() => nav(`?task=${parent.id}`)}>↑ {parent.title}</button> : <span className="text-xs text-muted">{project ? `${project.emoji} ${project.name}` : "Inbox"}</span>}
+        {parent ? <button className="text-xs text-muted hover:text-fg truncate max-w-[60%]" onClick={() => nav(`?task=${parent.id}`)}>↑ {parent.title}</button> : <span className="text-xs text-muted">{project ? `${project.emoji} ${project.name}` : "No project"}</span>}
         <div className="flex-1" />
         <IconBtn label="Start focus on this" onClick={() => { startFocus(id); nav("/focus"); }}><Timer size={17} /></IconBtn>
         <IconBtn label="Duplicate" onClick={() => { const { id: _o, ...rest } = task; void _o; addTask({ ...rest, title: task.title + " (copy)", gId: null, gList: null, gSeen: null, gPushed: null, calPushed: null, done: false, doneAt: null }); toast("Duplicated"); }}><Copy size={17} /></IconBtn>
@@ -113,26 +111,13 @@ function Editor({ id, onClose }: { id: string; onClose: () => void }) {
             className={cx("flex-1 resize-none bg-transparent font-display text-[26px] leading-tight outline-none", task.done && "striked")} />
         </div>
 
+        <StatusPicker task={task} project={project} />
+
         <div className="flex flex-wrap gap-1.5">
           <WhenChip value={{ due: task.due, time: task.time, recurrence: task.recurrence, duration: task.duration }} onChange={w => updateTask(id, { ...w, ...(w.due === null ? { recurrence: null, time: null } : {}), calOff: false })} />
           <ProjectChip value={task.projectId} onChange={pid => moveToProject(id, pid)} />
           <PriorityChip value={task.priority} onChange={pr => updateTask(id, { priority: pr })} />
           <TagChip value={task.tags} onChange={t => updateTask(id, { tags: t })} />
-          {project && (
-            <Popover trigger={({ toggle }) => <Chip icon={<Columns3 size={14} />} onClick={toggle}>{project.columns.find(c => c.id === task.column)?.name ?? "Status"}</Chip>}>
-              {close => <>{project.columns.map(c => <MenuItem key={c.id} active={c.id === task.column} onClick={() => { setColumn(id, c.id); close(); }}>{c.name}</MenuItem>)}</>}
-            </Popover>
-          )}
-          <Popover trigger={({ toggle }) => <Chip icon={<Target size={14} />} active={!!goal} onClick={toggle}>{goal?.title ?? "Goal"}</Chip>}>
-            {close => <>
-              <MenuItem active={!task.goalId} onClick={() => { updateTask(id, { goalId: null }); close(); }}>No goal</MenuItem>
-              {goals.map(g => <MenuItem key={g.id} active={g.id === task.goalId} onClick={() => { updateTask(id, { goalId: g.id }); close(); }}>{g.title}</MenuItem>)}
-              {!goals.length && <p className="px-3 py-2 text-sm text-muted">Make goals on the Goals page.</p>}
-            </>}
-          </Popover>
-          <Popover trigger={({ toggle }) => <Chip icon={<Zap size={14} />} active={!!task.energy} onClick={toggle}>{task.energy ? `${task.energy[0].toUpperCase()}${task.energy.slice(1)} energy` : "Energy"}</Chip>}>
-            {close => <>{([null, "low", "medium", "high"] as (Energy | null)[]).map(e => <MenuItem key={String(e)} active={task.energy === e} onClick={() => { updateTask(id, { energy: e }); close(); }}>{e ? `${e[0].toUpperCase()}${e.slice(1)} energy` : "Any energy"}</MenuItem>)}</>}
-          </Popover>
           {!task.due && (
             <Chip icon={<CalendarClock size={14} />} active={task.plannedFor === today()} onClick={() => updateTask(id, { plannedFor: task.plannedFor === today() ? null : today() })}>{task.plannedFor === today() ? "On today's plan" : "Plan for today"}</Chip>
           )}
@@ -177,6 +162,41 @@ function Editor({ id, onClose }: { id: string; onClose: () => void }) {
           {task.gId && <div>Synced with Google Tasks</div>}
         </div>
       </div>
+    </div>
+  );
+}
+
+/** Tasks with no project still have the two statuses every task has. */
+const PLAIN_COLUMNS: Column[] = [{ id: "todo", name: "To do", kind: "todo" }, { id: "done", name: "Done", kind: "done" }];
+
+const dotFor = (kind: Column["kind"]) => kind === "done" ? "bg-success" : kind === "doing" ? "bg-warning" : "bg-faint";
+
+/**
+ * Move a task through its project's columns without opening the board.
+ * Tasks outside a project get a plain To do / Done pair.
+ */
+function StatusPicker({ task, project }: { task: Task; project?: Project }) {
+  const cols = project?.columns ?? PLAIN_COLUMNS;
+  const fallback = (task.done ? cols.find(c => c.kind === "done") : cols.find(c => c.kind === "todo")) ?? cols[0];
+  const current = project && task.column && cols.some(c => c.id === task.column) ? task.column : fallback?.id;
+  const set = (c: Column) => {
+    if (project) { setColumn(task.id, c.id); return; }
+    if (c.kind === "done") { if (!task.done) completeTask(task.id); }
+    else if (task.done) reopenTask(task.id);
+  };
+  return (
+    <div>
+      <h3 className="eyebrow mb-1.5">Status</h3>
+      <div className="flex flex-wrap gap-1.5">
+        {cols.map(c => (
+          <button key={c.id} onClick={() => set(c)} aria-pressed={c.id === current}
+            className={cx("inline-flex items-center gap-1.5 h-8 px-3 rounded-full border text-[13px] transition-colors",
+              c.id === current ? "border-border-strong bg-surface-2 text-fg font-medium" : "border-border text-muted hover:text-fg hover:bg-surface-2")}>
+            <span className={cx("size-2 rounded-full", dotFor(c.kind))} />{c.name}
+          </button>
+        ))}
+      </div>
+      {!project && <p className="mt-1.5 text-xs text-faint">Put this task in a project to use that project's own statuses.</p>}
     </div>
   );
 }

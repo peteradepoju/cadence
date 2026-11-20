@@ -5,7 +5,7 @@ import { ConfirmProvider, Toaster, toast } from "./components/ui";
 import { TaskDrawer } from "./components/task-drawer";
 import { QuickAddModal } from "./components/quick-add";
 import { Palette } from "./components/palette";
-import { Today, Inbox, Upcoming, TagPage, CompletedPage, ArchivePage, rollPlanned } from "./pages/lists";
+import { Today, Unsorted, Upcoming, TagPage, CompletedPage, ArchivePage, rollPlanned } from "./pages/lists";
 import { ProjectPage } from "./pages/project";
 import { CalendarPage } from "./pages/calendar";
 import { GoalsPage } from "./pages/goals";
@@ -80,7 +80,9 @@ export default function App() {
           <Routes>
             <Route path="/" element={<Navigate to="/today" replace />} />
             <Route path="/today" element={<Today />} />
-            <Route path="/inbox" element={<Inbox />} />
+            {/* /inbox is kept: older bookmarks and links from other apps still point at it. */}
+            <Route path="/inbox" element={<Unsorted />} />
+            <Route path="/unsorted" element={<Unsorted />} />
             <Route path="/upcoming" element={<Upcoming />} />
             <Route path="/calendar" element={<CalendarPage />} />
             <Route path="/project/:id" element={<ProjectPage />} />

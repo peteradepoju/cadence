@@ -28,7 +28,7 @@ export interface Task {
   id: string;
   title: string;
   notes: string;
-  projectId: string | null;  // null = Inbox
+  projectId: string | null;  // null = no project (the Unsorted list)
   column: string | null;     // board column within the project
   parentId: string | null;   // subtasks
   order: number;
