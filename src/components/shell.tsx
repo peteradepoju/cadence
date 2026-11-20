@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router";
-import { Sun, Inbox, CalendarDays, CalendarRange, Timer, Target, NotebookPen, Settings, Plus, Hash, Search, Menu, ChevronDown, ChevronRight, Cloud, CloudOff, RefreshCw, AlertCircle, Star, Archive, CheckCircle2 } from "lucide-react";
+import { Sun, Inbox, CalendarDays, CalendarRange, Timer, Target, NotebookPen, Settings, Plus, Hash, Search, Menu, ChevronDown, ChevronRight, Cloud, CloudOff, RefreshCw, AlertCircle, Star, Archive, CheckCircle2, Blocks } from "lucide-react";
 import { useColl, useSettings } from "../lib/store";
 import { isToday, isOverdue, addProject } from "../lib/actions";
 import { openPalette, openQuickAdd } from "../lib/ui-state";
@@ -18,14 +18,17 @@ const NAV = [
   { to: "/focus", label: "Focus", icon: Timer, key: "focus" },
   { to: "/goals", label: "Goals", icon: Target, key: "goals" },
   { to: "/review", label: "Review", icon: NotebookPen, key: "review" },
+  { to: "/hub", label: "Hub", icon: Blocks, key: "hub" },
 ];
 
 function useCounts() {
   const tasks = useColl("tasks");
+  const shelf = useColl("shelf");
   return {
     today: tasks.filter(t => !t.parentId && isToday(t)).length,
     overdue: tasks.filter(t => !t.parentId && isOverdue(t)).length,
     inbox: tasks.filter(t => !t.done && !t.projectId && !t.parentId).length,
+    hub: shelf.filter(s => !s.decidedAt).length,
   };
 }
 
@@ -98,6 +101,7 @@ function Sidebar() {
             <n.icon size={17} strokeWidth={1.8} /> <span className="flex-1">{n.label}</span>
             {n.key === "today" && counts.today > 0 && <span className={cx("text-xs tabular", counts.overdue ? "text-danger" : "text-faint")}>{counts.today}</span>}
             {n.key === "inbox" && counts.inbox > 0 && <span className="text-xs tabular text-faint">{counts.inbox}</span>}
+            {n.key === "hub" && counts.hub > 0 && <span className="text-xs tabular text-faint">{counts.hub}</span>}
           </NavLink>
         ))}
       </div>

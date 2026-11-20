@@ -1,5 +1,7 @@
 // What Cadence stores. Every collection syncs field by field (see crdt.ts).
 
+import type { HubConfig } from "./hub/types";
+
 export type Priority = 1 | 2 | 3 | 4; // 1 is the most urgent, 4 is none
 export type Energy = "low" | "medium" | "high";
 
@@ -50,6 +52,10 @@ export interface Task {
   origin: string;            // device that created it
   source: string | null;     // "selah", "lumen", "gtasks", "todoist", a link…
   link: string | null;
+  // Pulled in from another app (see lib/hub)
+  externalId: string | null; // its id over there: what stops a daily sync duplicating work
+  sourceUrl: string | null;  // opens it in the app it came from
+  dayLock: number | null;    // 0-6: belongs to that weekday, so it defers a week at a time
   // Google Tasks
   gId: string | null;
   gList: string | null;
@@ -80,6 +86,36 @@ export interface Project {
 }
 
 export interface Tag { id: string; name: string; color: string; deleted?: boolean }
+
+/**
+ * Work another app is offering, waiting for you to accept it.
+ * Shelf items are deliberately not tasks: they have no date of their own and never show on Today,
+ * Upcoming or a board. They exist so a day can be proposed from them, and so that turning one
+ * down doesn't lose it.
+ */
+export interface ShelfItem {
+  id: string;                // "<sourceId>:<externalId>"
+  sourceId: string;
+  externalId: string;
+  title: string;
+  notes: string;
+  url: string | null;
+  offeredFor: string | null; // the date the app thinks it belongs on
+  time: string | null;
+  duration: number | null;   // minutes
+  dayLock: number | null;    // 0-6
+  streak: boolean;
+  gate: boolean;
+  priority: Priority;
+  project: string | null;    // project name; made on first accept
+  tags: string[];
+  kind: string;
+  pulledAt: string;
+  decidedAt: string | null;
+  outcome: "accepted" | "dismissed" | "done-elsewhere" | null;
+  taskId: string | null;
+  deleted?: boolean;
+}
 
 /** Old data only: Habits were removed from Cadence. Kept so earlier data still syncs and its calendar events can be cleared. */
 export interface Habit {
@@ -177,6 +213,8 @@ export interface Settings {
   calShowOthers: boolean;
   habitCalendar: boolean;
   dailyLimit: number;        // how many tasks Today suggests
+  hub: Record<string, HubConfig>; // the other apps Cadence pulls from, by source id
+  hubDaily: number;          // minutes a day the hub may claim for imported work
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -206,6 +244,8 @@ export const DEFAULT_SETTINGS: Settings = {
   calShowOthers: false,
   habitCalendar: false,
   dailyLimit: 6,
+  hub: {},
+  hubDaily: 240,
 };
 
 export interface FileMeta { id: string; name: string; mime: string; size: number; driveId: string | null; deleted?: boolean }
@@ -222,9 +262,10 @@ export type Collections = {
   reviews: Review;
   settings: Settings;
   files: FileMeta;
+  shelf: ShelfItem;
 };
 export type CollName = keyof Collections;
-export const COLLECTIONS: CollName[] = ["tasks", "projects", "tags", "habits", "habitLogs", "goals", "blocks", "sessions", "reviews", "settings", "files"];
+export const COLLECTIONS: CollName[] = ["tasks", "projects", "tags", "habits", "habitLogs", "goals", "blocks", "sessions", "reviews", "settings", "files", "shelf"];
 
 export const PALETTE = ["#4F6F52", "#3E6FD8", "#C8573C", "#B08D4F", "#7E57C2", "#1F8A6E", "#C0487A", "#5B6472", "#D08A2E", "#2F7F9E"];
 
@@ -243,7 +284,8 @@ export function newTask(p: Partial<Task> & { title: string }, device: string): T
     notes: "", projectId: null, column: null, parentId: null, order: Date.now(), priority: 4, tags: [],
     due: null, time: null, duration: null, plannedFor: null, recurrence: null, doneCount: 0, reminders: [], attachments: [],
     goalId: null, energy: null, done: false, doneAt: null, createdAt: new Date().toISOString(), origin: device,
-    source: null, link: null, gId: null, gList: null, gSeen: null, gPushed: null, calPushed: null,
+    source: null, link: null, externalId: null, sourceUrl: null, dayLock: null,
+    gId: null, gList: null, gSeen: null, gPushed: null, calPushed: null,
     ...p,
   };
 }

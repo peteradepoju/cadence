@@ -6,6 +6,7 @@ import { TaskDrawer } from "./components/task-drawer";
 import { QuickAddModal } from "./components/quick-add";
 import { Palette } from "./components/palette";
 import { Today, Unsorted, Upcoming, TagPage, CompletedPage, ArchivePage, rollPlanned } from "./pages/lists";
+import { HubPage } from "./pages/hub";
 import { ProjectPage } from "./pages/project";
 import { CalendarPage } from "./pages/calendar";
 import { GoalsPage } from "./pages/goals";
@@ -36,7 +37,7 @@ function Keys() {
       const k = e.key.toLowerCase();
       if (Date.now() - g < 1200) {
         g = 0;
-        const to = { t: "/today", i: "/inbox", u: "/upcoming", c: "/calendar", f: "/focus", g: "/goals", r: "/review", s: "/settings", p: "/plan" }[k];
+        const to = { t: "/today", i: "/inbox", u: "/upcoming", c: "/calendar", f: "/focus", g: "/goals", r: "/review", s: "/settings", p: "/plan", h: "/hub" }[k];
         if (to) { e.preventDefault(); nav(to); }
         return;
       }
@@ -83,6 +84,7 @@ export default function App() {
             {/* /inbox is kept: older bookmarks and links from other apps still point at it. */}
             <Route path="/inbox" element={<Unsorted />} />
             <Route path="/unsorted" element={<Unsorted />} />
+            <Route path="/hub" element={<HubPage />} />
             <Route path="/upcoming" element={<Upcoming />} />
             <Route path="/calendar" element={<CalendarPage />} />
             <Route path="/project/:id" element={<ProjectPage />} />

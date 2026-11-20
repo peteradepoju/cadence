@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { Cloud, ExternalLink, Loader2, LogOut, RefreshCw, KeyRound, Bell, Upload, Download, Link2, Trash2, Check, Copy, Sparkles, CalendarDays, ListChecks } from "lucide-react";
+import { Cloud, ExternalLink, Loader2, LogOut, RefreshCw, KeyRound, Bell, Upload, Download, Link2, Trash2, Check, Copy, Sparkles, CalendarDays, ListChecks, Blocks } from "lucide-react";
 import { Page } from "../components/shell";
 import { Button, PageHeader, Segmented, Toggle, toast, useConfirm } from "../components/ui";
 import { all, setSettings, useSettings, replaceAll, applyRemote } from "../lib/store";
@@ -10,6 +10,7 @@ import { checkKey, KEY_PROBLEM, AI_STUDIO_URL, resetModelSkips, modelsFor } from
 import { askPermission, canNotify } from "../lib/notify";
 import { backupJson, dateStamp, download, icsFile, importSelah, importTodoist, plainJson, restoreBackup, tasksCsv } from "../lib/io";
 import { resetCalendarMarks } from "../lib/gcal";
+import { ConnectedApps } from "./hub";
 import { resetGTasksCursors } from "../lib/gtasks";
 import { idb } from "../lib/idb";
 import { getTheme, setTheme, type Theme } from "../lib/theme";
@@ -206,6 +207,12 @@ export function SettingsPage() {
           <Button size="sm" onClick={() => download(icsFile(), `cadence-${dateStamp()}.ics`)}>Calendar (.ics)</Button>
         </div>
       </Card>
+
+      <section id="hub" className="card p-5 mb-4">
+        <h2 className="text-2xl flex items-center gap-2 mb-1"><Blocks size={20} />Connected apps</h2>
+        <p className="text-sm text-muted mb-3">Cadence works out what each of these asks of you each day and offers it on the Hub. Nothing becomes a task until you accept it, and Cadence never writes back to them.</p>
+        <div className="mt-3"><ConnectedApps /></div>
+      </section>
 
       <Card title="Add from other apps" icon={<Link2 size={20} />} sub="Lumen, Selah or anything else can send a task to Cadence by opening a link. It works on any device; the task waits in Unsorted.">
         <div className="rounded-xl bg-surface-2 p-3 font-mono text-[12px] break-all">{capture}<span className="text-muted">Read%2020%20pages</span>&amp;due=today&amp;notes=…&amp;link=…&amp;source=lumen</div>
