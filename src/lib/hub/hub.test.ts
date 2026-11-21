@@ -221,6 +221,83 @@ describe("accepting", () => {
   });
 });
 
+describe("work an app says is not a suggestion", () => {
+  beforeEach(() => _reset());
+
+  // A source that hands back exactly what we want to test, the way a real feed would.
+  const feed = (items: Record<string, unknown>[]) => ({
+    id: "testapp", name: "Test", blurb: "", needs: "none" as const, fields: [{ key: "on" as const, label: "On", type: "text" as const }],
+    problem: () => null,
+    items: () => items as never,
+  });
+
+  it("writes an auto item straight onto its day, without asking", async () => {
+    SOURCES.push(feed([{ sourceId: "testapp", externalId: "bible-1", title: "Bible: Romans 3-5", due: MON, duration: 30, priority: 1, project: "Bible", auto: true, streak: true, kind: "reading" }]));
+    try {
+      setConfig("testapp", { on: true });
+      const r = await pull(MON, MON);
+      expect(r.placed).toBe(1);
+      expect(waiting().length).toBe(0);            // never offered
+      const [task] = all("tasks");
+      expect(task.title).toBe("Bible: Romans 3-5");
+      expect(task.due).toBe(MON);
+      expect(task.priority).toBe(1);
+      expect(get("shelf", "testapp:bible-1")!.outcome).toBe("accepted");
+    } finally { SOURCES.pop(); }
+  });
+
+  it("does not add it twice, however often you check", async () => {
+    SOURCES.push(feed([{ sourceId: "testapp", externalId: "bible-1", title: "Bible: Romans 3-5", due: MON, duration: 30, auto: true }]));
+    try {
+      setConfig("testapp", { on: true });
+      await pull(MON, MON);
+      await pull(MON, MON);
+      await pull(MON, MON);
+      expect(all("tasks").length).toBe(1);
+    } finally { SOURCES.pop(); }
+  });
+
+  it("ticks the task off here when it is finished over there", async () => {
+    const live = [{ sourceId: "testapp", externalId: "bible-1", title: "Bible: Romans 3-5", due: MON, duration: 30, auto: true }];
+    const src = feed(live);
+    SOURCES.push(src);
+    try {
+      setConfig("testapp", { on: true });
+      await pull(MON, MON);
+      const id = all("tasks")[0].id;
+      expect(get("tasks", id)!.done).toBe(false);
+
+      // A source hands back `doneOutside`; `done` is the feed JSON spelling that rowsToItems maps.
+      live[0] = { ...live[0], doneOutside: true } as never;
+      await pull(MON, MON);
+      expect(get("tasks", id)!.done).toBe(true);
+      expect(all("tasks").length).toBe(1); // ticked off, not duplicated
+    } finally { SOURCES.pop(); }
+  });
+
+  it("counts against the day once it is there, so the planner plans around it", async () => {
+    SOURCES.push(feed([{ sourceId: "testapp", externalId: "b", title: "Bible", due: MON, duration: 60, auto: true }]));
+    try {
+      setConfig("testapp", { on: true });
+      setConfig("python-atlas", { on: true, week: 1, day: 1, anchorDate: MON });
+      await pull(MON, "2026-11-27");
+      const monday = propose(MON, 5).filter(p => p.date === MON).reduce((n, p) => n + p.minutes, 0);
+      expect(monday).toBeLessThanOrEqual(dailyBudget() - 60);
+    } finally { SOURCES.pop(); }
+  });
+
+  it("leaves an ordinary item alone", async () => {
+    SOURCES.push(feed([{ sourceId: "testapp", externalId: "x", title: "Something", due: MON, duration: 30 }]));
+    try {
+      setConfig("testapp", { on: true });
+      const r = await pull(MON, MON);
+      expect(r.placed).toBe(0);
+      expect(waiting().length).toBe(1);
+      expect(all("tasks").length).toBe(0);
+    } finally { SOURCES.pop(); }
+  });
+});
+
 describe("the source registry", () => {
   it("every source is findable and says what it needs", () => {
     for (const s of SOURCES) {

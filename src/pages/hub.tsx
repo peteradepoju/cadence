@@ -35,7 +35,8 @@ export function HubPage() {
       setPlan(propose());
       setDropped(new Set());
       setAi(null);
-      if (r.added) toast(`${r.added} new ${r.added === 1 ? "item" : "items"} from your apps`);
+      if (r.placed) toast(`${r.placed} added straight to your day`, { sub: "Your apps marked these as the day's first thing" });
+      else if (r.added) toast(`${r.added} new ${r.added === 1 ? "item" : "items"} from your apps`);
     } catch { toast("Couldn't reach one of your apps.", { tone: "error" }); }
     setBusy(false);
   };
@@ -234,6 +235,9 @@ function FeedFormat() {
   );
 }
 
+/** Selah picks the day's reading itself, so Cadence's own plan would be a second one. */
+const selahSendsReading = () => { const c = configFor("selah"); return !!c.on && !!c.url; };
+
 function SourceCard({ source }: { source: HubSource }) {
   const cfg = configFor(source.id);
   const problem = source.problem(cfg);
@@ -255,6 +259,12 @@ function SourceCard({ source }: { source: HubSource }) {
           {problem
             ? <p className="mt-2 text-xs text-warning">{problem}</p>
             : <p className="mt-2 text-xs text-faint">Ready. Its work shows on the Hub.</p>}
+          {source.id === "bible" && selahSendsReading() && (
+            <p className="mt-2 text-xs text-warning">
+              Selah is connected and already sends its own reading for the day, straight onto your plan.
+              Leave this on and you will get two. Turn it off unless you want a second plan.
+            </p>
+          )}
         </>
       )}
     </div>

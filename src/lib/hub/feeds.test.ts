@@ -181,6 +181,14 @@ describe("the open feed format any app can serve", () => {
     expect(items[1].dayLock).toBeNull();
   });
 
+  it("carries a not-a-suggestion flag through", () => {
+    const [i] = rowsToItems("selah", [{ id: "b", title: "Bible: Romans 3-5", due: from, auto: true, priority: 1 }], "Selah", from, to);
+    expect(i.auto).toBe(true);
+    expect(i.priority).toBe(1);
+    const [j] = rowsToItems("selah", [{ id: "x", title: "Ordinary" }], "Selah", from, to);
+    expect(j.auto).toBe(false);
+  });
+
   it("marks work already finished over there so it is never offered", () => {
     const [i] = rowsToItems("selah", [{ id: "d", title: "Done there", done: true }], "Selah", from, to);
     expect(i.doneOutside).toBe(true);

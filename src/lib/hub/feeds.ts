@@ -21,7 +21,7 @@ const inWindow = (d: string, from: string, to: string) => d >= from && d <= to;
 interface FeedRow {
   id?: string; title?: string; notes?: string; url?: string;
   due?: string; date?: string; time?: string; minutes?: number; duration?: number;
-  dayLock?: number; streak?: boolean; gate?: boolean; priority?: number;
+  dayLock?: number; streak?: boolean; gate?: boolean; auto?: boolean; priority?: number;
   project?: string; tags?: string[]; kind?: string; done?: boolean;
 }
 
@@ -51,6 +51,7 @@ export function rowsToItems(sourceId: string, body: unknown, project: string, fr
       dayLock: typeof r.dayLock === "number" && r.dayLock >= 0 && r.dayLock <= 6 ? r.dayLock : null,
       streak: !!r.streak,
       gate: !!r.gate,
+      auto: !!r.auto,
       priority: ([1, 2, 3, 4] as const).find(p => p === r.priority) ?? 3,
       project: r.project ?? project,
       tags: Array.isArray(r.tags) ? r.tags.filter(t => typeof t === "string") : [],

@@ -36,6 +36,11 @@ export interface HubItem {
   kind?: HubKind;
   /** Already finished over there — never offer it. */
   doneOutside?: boolean;
+  /**
+   * Not a suggestion. The app is saying this belongs on that day whatever else is happening, so
+   * Cadence writes it straight onto the day instead of putting it up for a decision.
+   */
+  auto?: boolean;
 }
 
 /** What a source keeps in Settings. Only `on` is common to all of them. */

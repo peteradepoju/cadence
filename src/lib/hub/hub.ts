@@ -1,5 +1,5 @@
 import { addDays, dayOfWeek, today } from "../dates";
-import { addProject, addTask, isOpen } from "../actions";
+import { addProject, addTask, completeTask, isOpen } from "../actions";
 import type { ShelfItem, Task } from "../model";
 import { all, create, get, put, settings } from "../store";
 import { SOURCES } from "./sources";
@@ -22,14 +22,14 @@ export const enabledSources = () => SOURCES.filter(s => configFor(s.id).on && !s
 /** How far ahead the hub looks. A fortnight is enough to see a week-long deferral land. */
 export const HORIZON = 13;
 
-export interface PullResult { added: number; updated: number; removed: number }
+export interface PullResult { added: number; updated: number; removed: number; placed: number }
 
 /**
  * Runs every switched-on source and reconciles the shelf.
  * Matching is by sourceId + externalId, so running this every morning never duplicates work.
  */
 export async function pull(from = today(), to = addDays(today(), HORIZON)): Promise<PullResult> {
-  const r: PullResult = { added: 0, updated: 0, removed: 0 };
+  const r: PullResult = { added: 0, updated: 0, removed: 0, placed: 0 };
   const seen = new Set<string>();
 
   for (const source of enabledSources()) {
@@ -45,7 +45,14 @@ export async function pull(from = today(), to = addDays(today(), HORIZON)): Prom
       const existing = get("shelf", id);
 
       if (item.doneOutside) {
-        if (existing && !existing.decidedAt) { put("shelf", id, { decidedAt: new Date().toISOString(), outcome: "done-elsewhere" }); r.removed++; }
+        if (existing?.taskId) {
+          // Read in the app it came from, so tick it off here rather than leaving it staring at you.
+          const t = get("tasks", existing.taskId);
+          if (t && !t.done) completeTask(existing.taskId);
+        } else if (existing && !existing.decidedAt) {
+          put("shelf", id, { decidedAt: new Date().toISOString(), outcome: "done-elsewhere" });
+          r.removed++;
+        }
         continue;
       }
 
@@ -61,6 +68,7 @@ export async function pull(from = today(), to = addDays(today(), HORIZON)): Prom
         dayLock: item.dayLock ?? null,
         streak: !!item.streak,
         gate: !!item.gate,
+        auto: !!item.auto,
         priority: item.priority ?? 3,
         project: item.project ?? null,
         tags: item.tags ?? [],
@@ -79,6 +87,8 @@ export async function pull(from = today(), to = addDays(today(), HORIZON)): Prom
     }
   }
 
+  r.placed = placeAutomatic();
+
   // An undecided item the source stopped offering (you changed your week, or a plan ended) goes.
   for (const s of all("shelf")) {
     if (s.decidedAt || seen.has(s.id)) continue;
@@ -87,6 +97,25 @@ export async function pull(from = today(), to = addDays(today(), HORIZON)): Prom
     r.removed++;
   }
   return r;
+}
+
+/**
+ * Writes the items an app marked as not-a-suggestion straight onto their day.
+ *
+ * These skip the shelf's whole point on purpose: the app is saying this belongs on that day
+ * whatever else is happening, so asking about it every morning would be noise. They are placed on
+ * the day they were offered for (today, if that day has gone), and they count against the day's
+ * budget afterwards like any other task, so the planner sees them and plans around them.
+ */
+export function placeAutomatic(from = today()): number {
+  let n = 0;
+  for (const item of all("shelf")) {
+    if (item.decidedAt || !item.auto || !item.offeredFor) continue;
+    const date = item.offeredFor < from ? from : item.offeredFor;
+    accept({ shelfId: item.id, date, minutes: item.duration ?? 30, moved: false, why: "added for you" });
+    n++;
+  }
+  return n;
 }
 
 /** Everything still waiting for a decision, soonest first. */

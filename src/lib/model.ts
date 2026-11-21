@@ -106,6 +106,7 @@ export interface ShelfItem {
   dayLock: number | null;    // 0-6
   streak: boolean;
   gate: boolean;
+  auto: boolean;             // goes straight onto the day, no proposal
   priority: Priority;
   project: string | null;    // project name; made on first accept
   tags: string[];
